@@ -1,0 +1,106 @@
+import java.text.SimpleDateFormat
+
+buildscript {
+  repositories {
+    jcenter()
+    mavenCentral()
+  }
+  dependencies {
+    // The nexus plugin makes uploading to Sonatype Nexus repository easier.
+    // See https://github.com/bmuschko/gradle-nexus-plugin for documentation
+    classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
+  }
+}
+
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'nexus'
+
+group = project.groupId
+
+sourceCompatibility = project.javaVersion
+targetCompatibility = project.javaVersion
+
+dependencies {
+  compile "org.codehaus.groovy:groovy-all:${project.groovyVersion}"
+  testCompile "org.spockframework:spock-core:${project.spockVersion}"
+}
+
+  // Disable the test report for the individual test task
+  test {
+    reports.html.enabled = true
+  }
+
+  repositories {
+    jcenter()
+    mavenCentral()
+    mavenLocal()
+  }
+
+  version = project.version
+
+  Date buildTimeAndDate = new Date()
+  ext {
+    buildDate = new SimpleDateFormat('dd-MMM-yyyy').format(buildTimeAndDate)
+    buildTime = new SimpleDateFormat('hh:mm aa').format(buildTimeAndDate)
+  }
+
+  def jarManifestAttributes = [
+  'Built-By'  : System.properties['user.name'],
+  'Created-By': System.properties['java.version'] + ' (' + System.properties['java.vendor'] + ' ' + System.getProperty("java.vm.version") + ")",
+  'Build-Date': buildDate,
+  'Build-Time': buildTime]
+
+  jar {
+    manifest {
+      attributes(jarManifestAttributes)
+    }
+  }
+
+  modifyPom {
+    project {
+      name project.name
+      description project.pomDescription
+      url 'https://github.com/gextech/binding-util'
+      inceptionYear '2014'
+
+      groupId project.groupId
+      artifactId project.artifactId
+      version project.version
+
+      scm {
+        url 'https://github.com/gextech/binding-util'
+
+        connection 'scm:https://git@github.com:gextech/binding-util.git'
+        developerConnection 'scm:git@github.com:gextech/binding-util.git'
+      }
+
+      developers {
+        developer {
+          id 'orocesar'
+          name 'Cesar Orozco'
+          email 'orocesar@gmail.com'
+          roles {
+            role 'Developer'
+          }
+        }
+        developer {
+          id 'domix'
+          name 'Domingo Suarez Torres'
+          email 'domingo.suarez@gmail.com'
+          roles {
+            role 'Developer'
+          }
+        }
+      }
+    }
+  }
+
+  nexus {
+    attachSources = true
+    attachTests = true
+    attachJavadoc = true
+    sign = false
+    repositoryUrl = 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/releases/'
+    snapshotRepositoryUrl = 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/snapshots/'
+  }
