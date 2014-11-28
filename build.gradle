@@ -23,6 +23,8 @@ targetCompatibility = project.javaVersion
 
 dependencies {
   compile "org.codehaus.groovy:groovy-all:${project.groovyVersion}"
+  compile "org.grails:grails-core:${project.grailsVersion}"
+  compile 'commons-lang:commons-lang:2.6'
   testCompile "org.spockframework:spock-core:${project.spockVersion}"
 }
 
@@ -35,6 +37,14 @@ dependencies {
     jcenter()
     mavenCentral()
     mavenLocal()
+
+    maven {
+      url 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/snapshots/'
+      credentials {
+        username nexusUsername
+        password nexusPassword
+      }
+    }
   }
 
   version = project.version
