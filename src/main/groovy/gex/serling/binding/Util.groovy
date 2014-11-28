@@ -13,9 +13,8 @@ class Util {
 
   def static avoidList = ['metaClass', 'class']
 
-  def static toDTO(Object source, Class target, List<String> avoid = []) {
+  def static toDTO(Object source, Object dto, List<String> avoid = []) {
     def invalidFields = avoidList + avoid
-    def dto = target.newInstance()
 
     Map entities = [:]
 
@@ -81,5 +80,12 @@ class Util {
     }
 
     dto
+  }
+
+  def static toDTO(Object source, Class target, List<String> avoid = []) {
+    def invalidFields = avoidList + avoid
+    def dto = target.newInstance()
+
+    toDTO(source, dto, invalidFields)
   }
 }
