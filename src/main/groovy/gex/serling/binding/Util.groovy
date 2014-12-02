@@ -20,9 +20,9 @@ class Util {
 
     dto.properties.keySet().each {
       def entity = StringUtils.splitByCharacterTypeCamelCase(it)
-      if (entity.length == 1 ) {
+      if (entity.length == 2) {
         entities.put(entity[0].toLowerCase(), entity[1].toLowerCase())
-      } else if (entity.length == 2) {
+      } else if (entity.length == 3) {
         entities.put(entity[0].toLowerCase(), entity[1].toLowerCase() + entity[2].capitalize())
       }
     }
@@ -42,9 +42,11 @@ class Util {
             dto.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), prop.getProperty(entities.getAt(attribute.key)))
           } else {
             Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
-            def destinationClass = sourceField.getGenericType()?.actualTypeArguments[0]
-            if (destinationClass) {
-              dto.setProperty(attribute.key, toDTO(attribute.key, destinationClass))
+            if (sourceField.getGenericType()?.actualTypeArguments?.length > 0) {
+              def destinationClass = sourceField.getGenericType()?.actualTypeArguments[0]
+              if (destinationClass) {
+                dto.setProperty(attribute.key, toDTO(attribute.key, destinationClass))
+              }
             }
           }
         } else if (prop instanceof Collection) {
