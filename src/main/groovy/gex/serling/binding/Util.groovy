@@ -20,8 +20,10 @@ class Util {
 
     dto.properties.keySet().each {
       def entity = StringUtils.splitByCharacterTypeCamelCase(it)
-      if (entity.length > 1) {
+      if (entity.length == 1 ) {
         entities.put(entity[0].toLowerCase(), entity[1].toLowerCase())
+      } else if (entity.length == 2) {
+        entities.put(entity[0].toLowerCase(), entity[1].toLowerCase() + entity[2].capitalize())
       }
     }
 
@@ -68,7 +70,7 @@ class Util {
             }
 
           }
-          if(destList){
+          if (destList) {
             dto.setProperty(attribute.key, destList)
           }
         } else {
