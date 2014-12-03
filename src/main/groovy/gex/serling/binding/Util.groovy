@@ -11,14 +11,19 @@ import java.lang.reflect.Field
 @Component
 class Util {
 
-  def static avoidList = ['metaClass', 'class']
+  static List avoidList = ['metaClass', 'class']
 
-  def static toDTO(Object source, Object dto, List<String> avoid = []) {
+  static Object bind(Object source, Object destination, List<String> avoid = []) {
+
+    if(source == null){
+      return null
+    }
+
     def invalidFields = avoidList + avoid
 
     Map entities = [:]
 
-    dto.properties.keySet().each {
+    destination.properties.keySet().each {
       def entity = StringUtils.splitByCharacterTypeCamelCase(it)
       if (entity.length == 2) {
         entities.put(entity[0].toLowerCase(), entity[1].toLowerCase())
@@ -28,7 +33,7 @@ class Util {
     }
 
     def props = source.properties.findAll {
-      (((it.key in dto.properties.keySet()) || (it.key in entities.keySet() && DomainClassArtefactHandler.isDomainClass(source.getProperty(it.key).getClass()))) &&
+      (((it.key in destination.properties.keySet()) || (it.key in entities.keySet() && DomainClassArtefactHandler.isDomainClass(source.getProperty(it.key).getClass()))) &&
         !invalidFields.contains(it.key))
     }
 
@@ -39,13 +44,13 @@ class Util {
 
         if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
           if (attribute.key in entities.keySet()) {
-            dto.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), prop.getProperty(entities.getAt(attribute.key)))
+            destination.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), prop.getProperty(entities.getAt(attribute.key)))
           } else {
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             if (sourceField.getGenericType()?.actualTypeArguments?.length > 0) {
               def destinationClass = sourceField.getGenericType()?.actualTypeArguments[0]
               if (destinationClass) {
-                dto.setProperty(attribute.key, toDTO(attribute.key, destinationClass))
+                destination.setProperty(attribute.key, bind(attribute.key, destinationClass))
               }
             }
           }
@@ -57,7 +62,7 @@ class Util {
 
           if (listItem) {
 
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass
             if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
               destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
@@ -66,30 +71,30 @@ class Util {
             if (destinationClass) {
               prop.each { theItem ->
                 if (theItem != null) {
-                  destList << toDTO(theItem, destinationClass)
+                  destList << bind(theItem, destinationClass)
                 }
               }
             }
 
           }
           if (destList) {
-            dto.setProperty(attribute.key, destList)
+            destination.setProperty(attribute.key, destList)
           }
         } else {
           if (attribute.value) {
-            dto.setProperty(attribute.key, attribute.value)
+            destination.setProperty(attribute.key, attribute.value)
           }
         }
       }
     }
 
-    dto
+    destination
   }
 
-  def static toDTO(Object source, Class target, List<String> avoid = []) {
+  static Object bind(Object source, Class target, List<String> avoid = []) {
     def invalidFields = avoidList + avoid
     def dto = target.newInstance()
 
-    toDTO(source, dto, invalidFields)
+    bind(source, dto, invalidFields)
   }
 }
