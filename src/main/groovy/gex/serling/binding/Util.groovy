@@ -28,8 +28,20 @@ class Util {
     }
 
     def props = source.properties.findAll {
-      (((it.key in dto.properties.keySet()) || (it.key in entities.keySet() && DomainClassArtefactHandler.isDomainClass(source.getProperty(it.key).getClass()))) &&
-        !invalidFields.contains(it.key))
+      (
+        (
+          it.key in dto.properties.keySet() ||
+            (
+              it.key in entities.keySet() &&
+                (
+                  DomainClassArtefactHandler.isDomainClass(source.getProperty(it.key).getClass()) ||
+                    source.getProperty(it.key).getClass().isEnum()
+                )
+            )
+        )
+          &&
+          !invalidFields.contains(it.key)
+      )
     }
 
     use(InvokerHelper) {
@@ -42,12 +54,16 @@ class Util {
             dto.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), prop.getProperty(entities.getAt(attribute.key)))
           } else {
             Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
-            if (sourceField.getGenericType()?.actualTypeArguments?.length > 0) {
-              def destinationClass = sourceField.getGenericType()?.actualTypeArguments[0]
-              if (destinationClass) {
-                dto.setProperty(attribute.key, toDTO(attribute.key, destinationClass))
-              }
-            }
+            def destinationClass = sourceField.getGenericType()
+            dto.setProperty(attribute.key, toDTO(prop, destinationClass))
+          }
+        } else if (prop.getClass().isEnum()) {
+          if (attribute.key in entities.keySet()) {
+            dto.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), dto?."${entities.getAt(attribute.key)}")
+          } else {
+            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            def destinationClass = sourceField.getGenericType()
+            dto.setProperty(attribute.key, toDTO(prop, destinationClass))
           }
         } else if (prop instanceof Collection) {
 
