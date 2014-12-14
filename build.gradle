@@ -39,11 +39,13 @@ dependencies {
     mavenCentral()
     mavenLocal()
 
-    maven {
-      url 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/snapshots/'
-      credentials {
-        username nexusUsername
-        password nexusPassword
+    if(hasProperty('nexusUsername') && hasProperty('nexusPassword')){
+      maven {
+        url 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/snapshots/'
+        credentials {
+          username nexusUsername
+          password nexusPassword
+        }
       }
     }
   }
