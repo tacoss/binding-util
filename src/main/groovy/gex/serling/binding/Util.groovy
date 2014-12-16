@@ -22,11 +22,14 @@ class Util {
       def entity = StringUtils.splitByCharacterTypeCamelCase(it)
 
       if (entity.length > 0) {
+
         def entitiName = entity.inject("") { acc, val ->
           if (checkForEntity(source, acc + val)) {
             acc + val
           } else if (checkForEntity(source, acc)) {
-            entities."$acc" << val.toLowerCase()
+            String value = it.split("$acc")[1]
+            value = value.replaceFirst(value[0], value[0].toLowerCase())
+            entities."$acc" << value
             acc
           } else {
             acc = acc + val
