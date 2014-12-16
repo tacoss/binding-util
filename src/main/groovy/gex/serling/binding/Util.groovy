@@ -11,14 +11,19 @@ import java.lang.reflect.Field
 @Component
 class Util {
 
-  def static avoidList = ['metaClass', 'class']
+  static List avoidList = ['metaClass', 'class']
 
-  def static toDTO(Object source, Object dto, List<String> avoid = []) {
+  def static bind(Object source, Object destination, List<String> avoid = []) {
+
+    if(source == null){
+      return null
+    }
+
     def invalidFields = avoidList + avoid
 
     Map entities = [:].withDefault { [] }
 
-    dto.properties.keySet().each {
+    destination.properties.keySet().each {
       def entity = StringUtils.splitByCharacterTypeCamelCase(it)
 
       if (entity.length > 0) {
@@ -44,7 +49,7 @@ class Util {
     }
 
     def props = source.properties.findAll {
-      it.key in dto.properties.keySet() && !invalidFields.contains(it.key)
+      it.key in destination.properties.keySet() && !invalidFields.contains(it.key)
     }
 
     props += entities
@@ -57,22 +62,22 @@ class Util {
         if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
           if (entities[attribute.key]) {
             entities[attribute.key].each { attr ->
-              dto.setProperty(attribute.key + attr.toString().capitalize(), prop.getProperty(attr))
+              destination.setProperty(attribute.key + attr.toString().capitalize(), prop.getProperty(attr))
             }
           } else {
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass = sourceField.getGenericType()
-            dto.setProperty(attribute.key, toDTO(prop, destinationClass))
+            destination.setProperty(attribute.key, bind(prop, destinationClass))
           }
         } else if (prop.getClass().isEnum()) {
           if (entities[attribute.key]) {
             entities[attribute.key].each { attr ->
-              dto.setProperty(attribute.key + attr.toString().capitalize(), dto?."${attr}")
+              destination.setProperty(attribute.key + attr.toString().capitalize(), destination?."${attr}")
             }
           } else {
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass = sourceField.getGenericType()
-            dto.setProperty(attribute.key, toDTO(prop, destinationClass))
+            destination.setProperty(attribute.key, bind(prop, destinationClass))
           }
         } else if (prop instanceof Collection) {
 
@@ -82,7 +87,7 @@ class Util {
 
           if (listItem) {
 
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass
             if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
               destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
@@ -91,24 +96,24 @@ class Util {
             if (destinationClass) {
               prop.each { theItem ->
                 if (theItem != null) {
-                  destList << toDTO(theItem, destinationClass)
+                  destList << bind(theItem, destinationClass)
                 }
               }
             }
 
           }
           if (destList) {
-            dto.setProperty(attribute.key, destList)
+            destination.setProperty(attribute.key, destList)
           }
         } else {
           if (attribute.value) {
-            dto.setProperty(attribute.key, attribute.value)
+            destination.setProperty(attribute.key, attribute.value)
           }
         }
       }
     }
 
-    dto
+    destination
   }
 
   private static boolean checkForEntity(Object source, String val) {
@@ -116,10 +121,10 @@ class Util {
       source.getProperty(val).getClass().isEnum())
   }
 
-  def static toDTO(Object source, Class target, List<String> avoid = []) {
+  def static bind(Object source, Class target, List<String> avoid = []) {
     def invalidFields = avoidList + avoid
     def dto = target.newInstance()
 
-    toDTO(source, dto, invalidFields)
+    bind(source, dto, invalidFields)
   }
 }
