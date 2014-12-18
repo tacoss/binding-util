@@ -1,4 +1,4 @@
-package gex.serling.binding
+package gex.infonavit.util
 
 import org.apache.commons.lang.StringUtils
 import org.codehaus.groovy.grails.commons.DomainClassArtefactHandler
@@ -7,11 +7,25 @@ import org.springframework.stereotype.Component
 import org.springframework.util.ReflectionUtils
 
 import java.lang.reflect.Field
+import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 
 @Component
 class Util {
 
   static List avoidList = ['metaClass', 'class']
+
+  def static getSourceProperties(Object source, Set<String> destinationsProps){
+    Map<String, Object> props = [:]
+    if(DomainClassArtefactHandler.isDomainClass(source.class)) {
+      def d = new DefaultGrailsDomainClass(source.class)
+      props = d.persistentProperties.collectEntries {
+        [ ( it.name ): source."${it.name}" ]
+      }
+    } else {
+      props  = source.properties
+    }
+    props.findAll { it.key in  destinationsProps}
+  }
 
   def static bind(Object source, Object destination, List<String> avoid = []) {
 
@@ -22,9 +36,10 @@ class Util {
     def invalidFields = avoidList + avoid
 
     Map entities = [:].withDefault { [] }
+    Set<String> destinationsProps = destination.properties.keySet().findAll { !(it in invalidFields) }
 
-    destination.properties.keySet().each {
-      def entity = StringUtils.splitByCharacterTypeCamelCase(it)
+    destinationsProps.each {
+      String[] entity = StringUtils.splitByCharacterTypeCamelCase(it)
 
       if (entity.length > 0) {
 
@@ -48,10 +63,7 @@ class Util {
       }
     }
 
-    def props = source.properties.findAll {
-      it.key in destination.properties.keySet() && !invalidFields.contains(it.key)
-    }
-
+    def props = getSourceProperties(source, destinationsProps)
     props += entities
 
     use(InvokerHelper) {
@@ -128,3 +140,4 @@ class Util {
     bind(source, dto, invalidFields)
   }
 }
+
