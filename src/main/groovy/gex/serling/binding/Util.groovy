@@ -11,38 +11,48 @@ import java.lang.reflect.Field
 @Component
 class Util {
 
-  def static avoidList = ['metaClass', 'class']
+  static List avoidList = ['metaClass', 'class']
 
-  def static toDTO(Object source, Object dto, List<String> avoid = []) {
+  def static bind(Object source, Object destination, List<String> avoid = []) {
+
+    if(source == null){
+      return null
+    }
+
     def invalidFields = avoidList + avoid
 
-    Map entities = [:]
+    Map entities = [:].withDefault { [] }
 
-    dto.properties.keySet().each {
+    destination.properties.keySet().each {
       def entity = StringUtils.splitByCharacterTypeCamelCase(it)
-      if (entity.length == 2) {
-        entities.put(entity[0].toLowerCase(), entity[1].toLowerCase())
-      } else if (entity.length == 3) {
-        entities.put(entity[0].toLowerCase(), entity[1].toLowerCase() + entity[2].capitalize())
+
+      if (entity.length > 0) {
+
+        def entitiName = entity.inject("") { acc, val ->
+          if (checkForEntity(source, acc + val)) {
+            acc + val
+          } else if (checkForEntity(source, acc)) {
+            String value = it.split("$acc")[1]
+            value = value.replaceFirst(value[0], value[0].toLowerCase())
+            entities."$acc" << value
+            acc
+          } else {
+            acc = acc + val
+            acc
+          }
+        }
+      } else {
+        if (checkForEntity(it)) {
+          entities."$it"
+        }
       }
     }
 
     def props = source.properties.findAll {
-      (
-        (
-          it.key in dto.properties.keySet() ||
-            (
-              it.key in entities.keySet() &&
-                (
-                  DomainClassArtefactHandler.isDomainClass(source.getProperty(it.key).getClass()) ||
-                    source.getProperty(it.key).getClass().isEnum()
-                )
-            )
-        )
-          &&
-          !invalidFields.contains(it.key)
-      )
+      it.key in destination.properties.keySet() && !invalidFields.contains(it.key)
     }
+
+    props += entities
 
     use(InvokerHelper) {
       props.each { attribute ->
@@ -50,20 +60,24 @@ class Util {
         def propName = attribute.key
 
         if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
-          if (attribute.key in entities.keySet()) {
-            dto.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), prop.getProperty(entities.getAt(attribute.key)))
+          if (entities[attribute.key]) {
+            entities[attribute.key].each { attr ->
+              destination.setProperty(attribute.key + attr.toString().capitalize(), prop.getProperty(attr))
+            }
           } else {
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass = sourceField.getGenericType()
-            dto.setProperty(attribute.key, toDTO(prop, destinationClass))
+            destination.setProperty(attribute.key, bind(prop, destinationClass))
           }
         } else if (prop.getClass().isEnum()) {
-          if (attribute.key in entities.keySet()) {
-            dto.setProperty(attribute.key + entities.getAt(attribute.key).toString().capitalize(), dto?."${entities.getAt(attribute.key)}")
+          if (entities[attribute.key]) {
+            entities[attribute.key].each { attr ->
+              destination.setProperty(attribute.key + attr.toString().capitalize(), destination?."${attr}")
+            }
           } else {
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass = sourceField.getGenericType()
-            dto.setProperty(attribute.key, toDTO(prop, destinationClass))
+            destination.setProperty(attribute.key, bind(prop, destinationClass))
           }
         } else if (prop instanceof Collection) {
 
@@ -73,7 +87,7 @@ class Util {
 
           if (listItem) {
 
-            Field sourceField = ReflectionUtils.findField(dto.getClass(), propName)
+            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
             def destinationClass
             if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
               destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
@@ -82,30 +96,35 @@ class Util {
             if (destinationClass) {
               prop.each { theItem ->
                 if (theItem != null) {
-                  destList << toDTO(theItem, destinationClass)
+                  destList << bind(theItem, destinationClass)
                 }
               }
             }
 
           }
           if (destList) {
-            dto.setProperty(attribute.key, destList)
+            destination.setProperty(attribute.key, destList)
           }
         } else {
           if (attribute.value) {
-            dto.setProperty(attribute.key, attribute.value)
+            destination.setProperty(attribute.key, attribute.value)
           }
         }
       }
     }
 
-    dto
+    destination
   }
 
-  def static toDTO(Object source, Class target, List<String> avoid = []) {
+  private static boolean checkForEntity(Object source, String val) {
+    source.hasProperty(val) && (DomainClassArtefactHandler.isDomainClass(source.getProperty(val).getClass()) ||
+      source.getProperty(val).getClass().isEnum())
+  }
+
+  def static bind(Object source, Class target, List<String> avoid = []) {
     def invalidFields = avoidList + avoid
     def dto = target.newInstance()
 
-    toDTO(source, dto, invalidFields)
+    bind(source, dto, invalidFields)
   }
 }
