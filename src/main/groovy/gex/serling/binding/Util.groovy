@@ -1,4 +1,4 @@
-package gex.infonavit.util
+package gex.serling.binding
 
 import org.apache.commons.lang.StringUtils
 import org.codehaus.groovy.grails.commons.DomainClassArtefactHandler
