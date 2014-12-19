@@ -18,7 +18,7 @@ class Util {
     Map<String, Object> props = [:]
     if(DomainClassArtefactHandler.isDomainClass(source.class)) {
       def d = new DefaultGrailsDomainClass(source.class)
-      props = d.persistentProperties.collectEntries {
+      props = ( d.properties.toList() << [ name:'id' ]).collectEntries {
         [ ( it.name ): source."${it.name}" ]
       }
     } else {
