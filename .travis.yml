@@ -1,0 +1,8 @@
+language: groovy
+jdk:
+- oraclejdk8
+env:
+  global:
+  - TERM=dumb
+  - GRADLE_OPTS="-Xmx128m -Xms128m -XX:+CMSClassUnloadingEnabled"
+script: ./gradlew clean build
