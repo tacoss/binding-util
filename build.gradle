@@ -3,24 +3,27 @@ import java.text.SimpleDateFormat
 buildscript {
   repositories {
     jcenter()
-    mavenCentral()
   }
   dependencies {
-    // The nexus plugin makes uploading to Sonatype Nexus repository easier.
-    // See https://github.com/bmuschko/gradle-nexus-plugin for documentation
-    classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
+    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
   }
 }
 
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: 'nexus'
 apply plugin: 'idea'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
 group = project.groupId
+version = project.version
 
 sourceCompatibility = project.javaVersion
 targetCompatibility = project.javaVersion
+
+repositories {
+  jcenter()
+}
 
 dependencies {
   compile "org.codehaus.groovy:groovy-all:${project.groovyVersion}"
@@ -29,91 +32,111 @@ dependencies {
   testCompile "org.spockframework:spock-core:${project.spockVersion}"
 }
 
-  // Disable the test report for the individual test task
-  test {
-    reports.html.enabled = true
-  }
+Date buildTimeAndDate = new Date()
+ext {
+  buildDate = new SimpleDateFormat('dd-MMM-yyyy').format(buildTimeAndDate)
+  buildTime = new SimpleDateFormat('hh:mm aa').format(buildTimeAndDate)
+}
 
-  repositories {
-    jcenter()
-    mavenCentral()
-    mavenLocal()
-
-    if(hasProperty('nexusUsername') && hasProperty('nexusPassword')){
-      maven {
-        url 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/snapshots/'
-        credentials {
-          username nexusUsername
-          password nexusPassword
-        }
-      }
-    }
-  }
-
-  version = project.version
-
-  Date buildTimeAndDate = new Date()
-  ext {
-    buildDate = new SimpleDateFormat('dd-MMM-yyyy').format(buildTimeAndDate)
-    buildTime = new SimpleDateFormat('hh:mm aa').format(buildTimeAndDate)
-  }
-
-  def jarManifestAttributes = [
+def jarManifestAttributes = [
   'Built-By'  : System.properties['user.name'],
   'Created-By': System.properties['java.version'] + ' (' + System.properties['java.vendor'] + ' ' + System.getProperty("java.vm.version") + ")",
   'Build-Date': buildDate,
   'Build-Time': buildTime]
 
-  jar {
-    manifest {
-      attributes(jarManifestAttributes)
+jar {
+  manifest {
+    attributes(jarManifestAttributes)
+  }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+  classifier = 'sources'
+  from sourceSets.main.allSource
+}
+
+artifacts {
+  archives sourcesJar
+}
+
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+      artifact sourcesJar
+
+      pom.withXml {
+        def root = asNode()
+        root.appendNode('name', project.name)
+        root.appendNode('description', project.description)
+        root.appendNode('url', 'https://github.com/gextech/binding-util')
+        root.appendNode('inceptionYear', '2014')
+
+        def scm = root.appendNode('scm')
+        scm.appendNode('url', 'https://github.com/gextech/binding-util')
+        scm.appendNode('connection', 'scm:https://domix@github.com/gextech/binding-util.git')
+        scm.appendNode('developerConnection', 'scm:git@github.com:gextech/binding-util.git')
+
+        def license = root.appendNode('licenses').appendNode('license')
+        license.appendNode('name', 'The Apache Software License, Version 2.0')
+        license.appendNode('url', 'http://www.apache.org/licenses/LICENSE-2.0.txt')
+        license.appendNode('distribution', 'repo')
+
+        def developers = root.appendNode('developers')
+        def domix = developers.appendNode('developer')
+        domix.appendNode('id', 'domix')
+        domix.appendNode('name', 'Domingo Suarez Torres')
+        domix.appendNode('email', 'domingo.suarez@gmail.com')
+
+        def orocesar = developers.appendNode('developer')
+        orocesar.appendNode('id', 'orocesar')
+        orocesar.appendNode('name', 'Cesar Orozco')
+        orocesar.appendNode('email', 'orocesar@gmail.com')
+
+        def hgmiguel = developers.appendNode('developer')
+        hgmiguel.appendNode('id', 'hgmiguel')
+        hgmiguel.appendNode('name', 'Miguel angel Huerta')
+        hgmiguel.appendNode('email', 'hgmiguel@gmail.com')
+
+        def anallely = developers.appendNode('developer')
+        anallely.appendNode('id', 'anallely')
+        anallely.appendNode('name', 'Anallely Olivares')
+        anallely.appendNode('email', 'anaoko@gmail.com')
+      }
     }
   }
+}
 
-  modifyPom {
-    project {
-      name project.name
-      description project.pomDescription
-      url 'https://github.com/gextech/binding-util'
-      inceptionYear '2014'
+bintray {
+  user = project.hasProperty('bintray_user') ? bintray_user : ''
+  key = project.hasProperty('bintray_api_key') ? bintray_api_key : ''
 
-      groupId project.groupId
-      artifactId project.artifactId
-      version project.version
-
-      scm {
-        url 'https://github.com/gextech/binding-util'
-
-        connection 'scm:https://git@github.com:gextech/binding-util.git'
-        developerConnection 'scm:git@github.com:gextech/binding-util.git'
-      }
-
-      developers {
-        developer {
-          id 'orocesar'
-          name 'Cesar Orozco'
-          email 'orocesar@gmail.com'
-          roles {
-            role 'Developer'
-          }
-        }
-        developer {
-          id 'domix'
-          name 'Domingo Suarez Torres'
-          email 'domingo.suarez@gmail.com'
-          roles {
-            role 'Developer'
-          }
-        }
+  publications = ['mavenJava']
+  dryRun = false //Whether to run this as dry-run, without deploying
+  publish = true //If version should be auto published after an upload
+  pkg {
+    repo = 'oss'
+    userOrg = 'gextech'
+    name = project.name
+    desc = project.description
+    websiteUrl = 'https://github.com/gextech/binding-util'
+    issueTrackerUrl = 'https://github.com/gextech/binding-util/issues'
+    vcsUrl = 'https://github.com/gextech/binding-util.git'
+    licenses = ['Apache-2.0']
+    labels = ['gex', 'serling', 'binding']
+    publicDownloadNumbers = true
+    attributes = ['a': ['ay1', 'ay2'], 'b': ['bee'], c: 'cee']
+    //Optional version descriptor
+    version {
+      name = project.version
+      desc = project.description
+      mavenCentralSync {
+        sync = false
+        user = ''
+        password = ''
+        close = '1'
       }
     }
   }
-
-  nexus {
-    attachSources = true
-    attachTests = true
-    attachJavadoc = true
-    sign = false
-    repositoryUrl = 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/releases/'
-    snapshotRepositoryUrl = 'http://nexus.plataforma.virginia.exp.mx/nexus/content/repositories/snapshots/'
-  }
+}
