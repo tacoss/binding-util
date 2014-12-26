@@ -11,3 +11,6 @@ jdk:
 
 env:
 - TERM=dumb
+
+after_success:
+- ./gradlew jacocoTestReport coveralls
