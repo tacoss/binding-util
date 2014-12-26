@@ -1,6 +1,8 @@
 binding-util
 ============
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gextech/binding-util?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This library binds Java Objects, it is aware of hibernate (GORM) entities
 
 [![Build Status](https://travis-ci.org/gextech/binding-util.svg?branch=master)](https://travis-ci.org/gextech/binding-util)
