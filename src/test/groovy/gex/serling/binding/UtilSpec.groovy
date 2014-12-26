@@ -6,10 +6,15 @@ import spock.lang.Specification
  * Created by domix on 12/26/14.
  */
 class UtilSpec extends Specification {
-  def 'foo'() {
+  def 'should bind a new Instance taking a instanciated object'() {
     when:
       def util = new Util()
+      def object = util.bind(new Demo(name: 'name'), Demo)
     then:
-      util
+      object.name == 'name'
   }
+}
+
+class Demo {
+  String name
 }
