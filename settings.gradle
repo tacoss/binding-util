@@ -1,1 +1,3 @@
 rootProject.name = 'binding-util'
+include 'test-integration'
+
