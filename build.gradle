@@ -2,9 +2,11 @@ import java.text.SimpleDateFormat
 
 buildscript {
   repositories {
+
     jcenter()
   }
   dependencies {
+    classpath "org.springframework.boot:spring-boot-gradle-plugin:${project.springBootVersion}"
     classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1'
   }
@@ -12,6 +14,7 @@ buildscript {
 
 apply plugin: 'groovy'
 apply plugin: 'java'
+apply plugin: 'spring-boot'
 apply plugin: 'idea'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
@@ -29,10 +32,17 @@ repositories {
 }
 
 dependencies {
-  compile "org.codehaus.groovy:groovy-all:${project.groovyVersion}"
-  compile "org.grails:grails-core:${project.grailsVersion}"
-  compile 'commons-lang:commons-lang:2.6'
-  testCompile "org.spockframework:spock-core:${project.spockVersion}"
+  compile ("org.codehaus.groovy:groovy-all:${project.groovyVersion}")
+  compile ("org.grails:grails-core:${project.grailsVersion}")
+  compile ('commons-lang:commons-lang:2.6')
+  testCompile ("org.spockframework:spock-core:${project.spockVersion}")
+
+  testCompile ("org.grails:gorm-hibernate4-spring-boot:${project.gormHibernateVersion}")
+  testCompile "org.spockframework:spock-spring:${project.spockVersion}"
+  testCompile "org.springframework.boot:spring-boot-starter-test:${project.springBootVersion}"
+  testCompile ("org.springframework.boot:spring-boot-starter-web:${project.springBootVersion}")
+  testCompile "org.springframework.boot:spring-boot-starter-data-jpa:${project.springBootVersion}"
+  testCompile "org.hsqldb:hsqldb:${project.hsqldbVersion}"
 }
 
 Date buildTimeAndDate = new Date()
