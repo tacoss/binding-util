@@ -6,15 +6,13 @@ buildscript {
     jcenter()
   }
   dependencies {
-    classpath "org.springframework.boot:spring-boot-gradle-plugin:${project.springBootVersion}"
-    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1'
+    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
   }
 }
 
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: 'spring-boot'
 apply plugin: 'idea'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
