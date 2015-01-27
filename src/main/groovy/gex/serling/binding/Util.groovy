@@ -118,7 +118,7 @@ class Util {
             destination.setProperty(attribute.key, destList)
           }
         } else {
-          if (attribute.value) {
+          if (attribute.value != null) {
             destination.setProperty(attribute.key, attribute.value)
           }
         }

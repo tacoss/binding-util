@@ -12,5 +12,5 @@ jdk:
 env:
 - TERM=dumb
 
-after_success:
-- ./gradlew jacocoTestReport coveralls
+script:
+- ./gradlew clean test jacocoTestReport coveralls

@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    driverClassName: org.hsqldb.jdbcDriver
+    url: jdbc:hsqldb:mem:sample
+    username: sa
+    password:
+    validationInterval: 15000
+    timeBetweenEvictionRunsMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    maxAge: 600000
+    validationQuery: "SELECT 1;"
+    testOnBorrow: true
+    hbm2ddl:
+      auto: none
