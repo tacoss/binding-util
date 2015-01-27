@@ -1,5 +1,15 @@
 
-0.1.10 / 2014-12-22 
+0.1.13 / 2015-01-27
+==================
+
+  * Removing spring boot plugin in the build file definition
+  * Updating travis
+  * Removing spaces
+  * - Tests were added - Issue solved: Null value & False value support  (Binding boolean now works)
+  * Tests now works, but i am not happy with grails version
+  * Added Gitter badge
+
+0.1.10 / 2014-12-22
 ==================
 
   * added support for bintray release
