@@ -1,4 +1,4 @@
-package gex.serling.binding
+package gex.serling.binding.domain
 
 import grails.persistence.Entity
 
@@ -6,12 +6,11 @@ import grails.persistence.Entity
  * Created by Tsunllly on 1/26/15.
  */
 @Entity
-class ExampleDomain {
+class Superpower {
 
   String id
 
   String name
-
 
   static mapping = {
     id generator: 'uuid2'

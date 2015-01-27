@@ -1,8 +1,7 @@
-package gex.serling.binding
-
+package gex.serling.binding.dto
 /**
  * Created by Tsunllly on 1/23/15.
  */
-class ExampleDto {
+class Enemy {
   String name
 }
