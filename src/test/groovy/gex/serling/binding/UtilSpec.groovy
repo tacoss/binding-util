@@ -3,8 +3,6 @@ package gex.serling.binding
 import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
-import spock.lang.Ignore
-import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -89,7 +87,6 @@ class UtilSpec extends Specification {
     then:
       dtoHero.name == domainHero.name
       dtoHero.enemies.each{
-        println(it)
         domainHero.enemies*.name.contains(it.name)
       }
   }
@@ -115,4 +112,21 @@ class UtilSpec extends Specification {
       true         || true
   }
 
+  def 'It binds CamelCase properties, no matter they are not embedded objects'(){
+    given:
+      gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+      domainHero.name = "The doctor"
+      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+
+    when:
+      Hero dtoHero = Util.bind(domainHero, Hero.class)
+
+    then:
+      dtoHero.name == domainHero.name
+      dtoHero.enemies.each{
+        domainHero.enemies*.name.contains(it.name)
+      }
+  }
+  
+  
 }
