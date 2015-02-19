@@ -3,7 +3,6 @@ package gex.serling.binding
 import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
-import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -27,7 +26,7 @@ class UtilSpec extends Specification {
     then:
       object.name == 'name'
   }
-
+  
   def 'Bind between an entity object and a pojo is made without problem'(){
     given:
       gex.serling.binding.domain.Hero domain = new gex.serling.binding.domain.Hero(name: 'Dalek Caan')
@@ -60,6 +59,7 @@ class UtilSpec extends Specification {
       domain.isInmortal == null
   }
 
+
   def 'It binds embeddedObjects using camelCase'(){
     given:
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
@@ -87,9 +87,7 @@ class UtilSpec extends Specification {
 
     then:
       dtoHero.name == domainHero.name
-      dtoHero.enemies.each{
-        domainHero.enemies*.name.contains(it.name)
-      }
+      dtoHero.enemies*.name.containsAll(domainHero.enemies*.name)
   }
 
   @Unroll
@@ -129,23 +127,49 @@ class UtilSpec extends Specification {
       }
   }
 
-  def 'It can be specified a dynamic way to bind properties'(){
+  def 'It can be specified a dynamic way to bind properties (simple properties)'(){
     when:
       def util = new Util()
 
       Map map = [
         "age" : { x -> x * 10 }
       ]
-    
-      def cb = new BindingEntry(source: Hero.class, destination: gex.serling.binding.domain.Hero.class, customBinding: map )
-    
+
+      def cb = new BindingEntry(source: Hero.class, destination: gex.serling.binding.domain.Hero.class, customBindings: map )
+
       util.registerBinding( cb )
-    
-      def object = util.superBind(new Hero(name: 'Goku', age: 21 ), gex.serling.binding.domain.Hero)
+
+      def object = util.dynamicBind(new Hero(name: 'Goku', age: 21 ), gex.serling.binding.domain.Hero)
     then:
-      
+
       object.name == 'Goku'
       object.age == 210
+  }
+
+  def 'It can be specified a dynamic way to bind properties (collection properties)'(){
+    given:
+      def util = new Util()
+
+      def hardcodedEnemies = [new Enemy(name: 'OtroDale'), new Enemy(name: 'OtroCyberman'), new Enemy(name: 'Otro Weeping Ange')]
+      Map map = [
+        "enemies" : { x -> hardcodedEnemies }
+      ]
+
+      def cb = new BindingEntry(source: gex.serling.binding.domain.Hero.class, destination: Hero.class , customBindings: map )
+
+      util.registerBinding( cb )
+
+
+      gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+      domainHero.name = "The doctor"
+      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+
+    when:
+      Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
+
+    then:
+      dtoHero.name == domainHero.name
+      dtoHero.enemies.containsAll(hardcodedEnemies)
   }
   
   

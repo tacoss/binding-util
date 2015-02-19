@@ -13,6 +13,7 @@ class Hero {
   List otherNames
 
   String SuperpowerName
+  
 
 
   List<Enemy> enemies

@@ -7,7 +7,7 @@ class BindingEntry {
   
   Class source
   Class destination
-  Map<String, Closure> customBinding
+  Map<String, Closure> customBindings
   
   
   

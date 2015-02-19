@@ -12,38 +12,229 @@ import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 @Component
 class Util {
 
-  List<BindingEntry> binding
+  static List avoidList = ['metaClass', 'class']
   
-  static Util auxForStatic = new Util( binding: [] )
-
-  void registerBinding(BindingEntry bindingEntry){
-    binding = binding ?: []
-    binding.add(bindingEntry)
+  List<BindingEntry> dynamicBindings
+  List<String> exclusions
+  
+  
+  Util(){
+    dynamicBindings = []
+    exclusions = []
   }
 
-  static List avoidList = ['metaClass', 'class']
+  Util(List<BindingEntry> dynamicBindings, List<String> exclusions) {
+    this.dynamicBindings = dynamicBindings
+    this.exclusions = exclusions
+  }
 
-  
-  
-  def superBind(Object source, Object destination, List<String> avoid = [], List<BindingEntry> customBinding = []){
-    
+  void registerBinding(BindingEntry bindingEntry){
+    dynamicBindings = dynamicBindings ?: []
+    dynamicBindings.add(bindingEntry)
+  }
+
+  void registerExclusion(String exclusion){
+    exclusions = exclusions ?: []
+    exclusions.add(exclusion)
+  }
+
+  def static bind(Object source, Class target, List<String> avoid = []) {
+    def invalidFields = avoidList + avoid
+    def dto = target.newInstance()
+    bind(source, dto, invalidFields)
+  }
+
+  def static bind(Object source, Object destination, List<String> avoid = []) {
+    new Util(exclusions: avoid, dynamicBindings: []).dynamicBind(source, destination)
+  }
+
+  def dynamicBind(Object source, Class target) {
+    def dto = target.newInstance()
+    dynamicBind(source, dto)
+  }
+
+  def dynamicBind(Object source, Object destination){
     if(source == null){
       return null
     }
 
-    def invalidFields = avoidList + avoid
+    def invalidFields = avoidList + exclusions
+    def destinationProperties = getValidDestinationProperties(destination, invalidFields, source)
+    
+    Set<String> destinationsProps = destinationProperties.destinationsProps
+    Map destinationEntities = destinationProperties.entities
 
-    Map entities = [:].withDefault { [] }
+    def sourceProperties = getSourceProperties(source, destinationsProps)
+    sourceProperties += destinationEntities
+
+    use(InvokerHelper) {
+      sourceProperties.each { sourcePropertyEntry ->
+
+        def result
+        def sourceProperty = source.getProperty(sourcePropertyEntry.key)
+
+        if (DomainClassArtefactHandler.isDomainClass(sourceProperty.getClass())) {
+          result = processDomainClass(source, destination, sourcePropertyEntry, destinationEntities)
+        } else if (sourceProperty.getClass().isEnum()) {
+          result = processEnum(source, destination, sourcePropertyEntry, destinationEntities)
+        } else if (sourceProperty instanceof Collection) {
+          result = processCollection(source, destination, sourcePropertyEntry, destinationEntities)
+        } else {
+          result = processSimpleProperty(source, destination, sourcePropertyEntry, destinationEntities)
+        }
+
+        if(dynamicBindings){
+          result = processDynamicBinding(source, destination, sourcePropertyEntry, destinationEntities) ?: result
+        }
+        
+        if(result) {
+          destination.setProperty(result.key, result.value)
+        }
+        
+      }
+    }
+    
+    destination
+  }
+  
+  def Map processDomainClass(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
+    String key
+    String value
+    
+    String sourcePropName = sourcePropertyEntry.key
+    def sourceProperty = source.getProperty(sourcePropName)
+
+    if (destinationEntities[sourcePropName]) {
+      destinationEntities[sourcePropName].each { attr ->
+        key = sourcePropName + attr.toString().capitalize()
+        value = sourceProperty.getProperty(attr)
+      }
+    } else {
+      Field sourceField = ReflectionUtils.findField(destination.getClass(), sourcePropName)
+      def destinationClass = sourceField.getGenericType()
+      key = sourcePropertyEntry.name
+      value = dynamicBind(sourceProperty, destinationClass)
+    }
+    
+    [key: key, value: value] 
+  }
+  
+  
+  def processEnum(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
+    String key
+    String value
+
+    String sourcePropName = sourcePropertyEntry.key
+    def sourceProperty = source.getProperty(sourcePropName)
+
+
+    if (destinationEntities[sourcePropName]) {
+      destinationEntities[sourcePropName].each { attr ->
+        key = sourcePropName + attr.toString().capitalize()
+        value = destination?."${attr}"
+      }
+    } else {
+      Field sourceField = ReflectionUtils.findField(destination.getClass(), sourcePropName)
+      def destinationClass = sourceField.getGenericType()
+      key = sourcePropName
+      value = dynamicBind(sourceProperty, destinationClass)
+    }
+
+    [key: key, value: value]
+  }
+  
+  
+  def processCollection(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
+    Map destinationValue
+
+    String sourcePropName = sourcePropertyEntry.key
+    def sourceProperty = source.getProperty(sourcePropName)
+    
+    def destList = []
+
+    def listItem = sourceProperty.find { it != null }
+
+    if (listItem) {
+
+      Field sourceField = ReflectionUtils.findField(destination.getClass(), sourcePropName)
+      def destinationClass
+      if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
+        destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
+      }
+
+      if (destinationClass) {
+        sourceProperty.each { theItem ->
+          if (theItem != null) {
+            destList << dynamicBind(theItem, destinationClass)
+          }
+        }
+      }
+
+    }
+    if (destList) {
+      destinationValue = [
+        key: sourcePropName,
+        value: destList
+      ]
+    }
+    destinationValue
+  }
+
+  
+  def processSimpleProperty(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
+    Map destinationValue
+    
+    if (sourcePropertyEntry.value != null) {
+      destinationValue = [
+        key: sourcePropertyEntry.key,
+        value:  sourcePropertyEntry.value
+      ]
+    }
+    
+    destinationValue
+  }
+
+  def processDynamicBinding(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
+    Map destinationValue
+
+    def customClosure = dynamicBindings.find{
+      it.source.name == source.class.name
+      it.destination.name == destination.class.name
+    }?.customBindings?.get(sourcePropertyEntry.key)
+    
+    
+    if(customClosure) {
+      destinationValue = [
+        key: sourcePropertyEntry.key,
+        value: customClosure(sourcePropertyEntry.value)
+      ]
+    }
+    
+    destinationValue
+  }
+
+  def static getSourceProperties(Object source, Set<String> destinationsProps){
+    Map<String, Object> props = [:]
+    if(DomainClassArtefactHandler.isDomainClass(source.class)) {
+      def d = new DefaultGrailsDomainClass(source.class)
+      props = ( d.properties.toList() << [ name:'id' ]).collectEntries {
+        [ ( it.name ): source."${it.name}" ]
+      }
+    } else {
+      props  = source.properties
+    }
+    props.findAll { it.key in  destinationsProps}
+  }
+
+  private Map getValidDestinationProperties(Object destination, List invalidFields, Object source) {
     Set<String> destinationsProps = destination.properties.keySet().findAll { !(it in invalidFields) }
 
+    Map entities = [:].withDefault { [] }
 
-    
-    
     destinationsProps.each {
       String[] entity = StringUtils.splitByCharacterTypeCamelCase(it)
 
       if (entity.length > 0) {
-
         def entitiName = entity.inject("") { acc, val ->
           if (checkForEntity(source, acc + val)) {
             acc + val
@@ -64,122 +255,17 @@ class Util {
       }
     }
 
-    def props = getSourceProperties(source, destinationsProps)
-    props += entities
-
-    use(InvokerHelper) {
-      props.each { attribute ->
-        def prop = source.getProperty(attribute.key)
-        def propName = attribute.key
-
-        if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
-          if (entities[attribute.key]) {
-            entities[attribute.key].each { attr ->
-              destination.setProperty(attribute.key + attr.toString().capitalize(), prop.getProperty(attr))
-            }
-          } else {
-            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
-            def destinationClass = sourceField.getGenericType()
-            destination.setProperty(attribute.key, bind(prop, destinationClass))
-          }
-        } else if (prop.getClass().isEnum()) {
-          if (entities[attribute.key]) {
-            entities[attribute.key].each { attr ->
-              destination.setProperty(attribute.key + attr.toString().capitalize(), destination?."${attr}")
-            }
-          } else {
-            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
-            def destinationClass = sourceField.getGenericType()
-            destination.setProperty(attribute.key, bind(prop, destinationClass))
-          }
-        } else if (prop instanceof Collection) {
-
-          def destList = []
-
-          def listItem = prop.find { it != null }
-
-          if (listItem) {
-
-            Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
-            def destinationClass
-            if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
-              destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
-            }
-
-            if (destinationClass) {
-              prop.each { theItem ->
-                if (theItem != null) {
-                  destList << bind(theItem, destinationClass)
-                }
-              }
-            }
-
-          }
-          if (destList) {
-            destination.setProperty(attribute.key, destList)
-          }
-        } else {
-          if (attribute.value != null) {
-            destination.setProperty(attribute.key, attribute.value)
-
-            if(binding){
-              def x = binding.find{
-                it.source.name == source.class.name
-                it.destination.name == destination.class.name
-              }
-
-              def funct = x.customBinding.get(attribute.key)
-
-              if(funct) {
-                destination.setProperty(attribute.key, funct(attribute.value))
-              }
-            }
-          }
-        }
-      }
-    }
-
-
-    
-    
-
-    destination
-    
+    def result = [
+      destinationsProps: destinationsProps,
+      entities: entities
+    ]
+    result
   }
-
-
-  def static getSourceProperties(Object source, Set<String> destinationsProps){
-    Map<String, Object> props = [:]
-    if(DomainClassArtefactHandler.isDomainClass(source.class)) {
-      def d = new DefaultGrailsDomainClass(source.class)
-      props = ( d.properties.toList() << [ name:'id' ]).collectEntries {
-        [ ( it.name ): source."${it.name}" ]
-      }
-    } else {
-      props  = source.properties
-    }
-    props.findAll { it.key in  destinationsProps}
-  }
-
-  def static bind(Object source, Object destination, List<String> avoid = []) {
-    auxForStatic.superBind(source, destination, avoid)
-  }
-
+  
   private static boolean checkForEntity(Object source, String val) {
     source.hasProperty(val) && (DomainClassArtefactHandler.isDomainClass(source.getProperty(val).getClass()) ||
       source.getProperty(val).getClass().isEnum())
   }
-
-  def static bind(Object source, Class target, List<String> avoid = []) {
-    def invalidFields = avoidList + avoid
-    def dto = target.newInstance()
-
-    bind(source, dto, invalidFields)
-  }
-
-  def superBind(Object source, Class target, List<String> avoid = []) {
-    def dto = target.newInstance()
-    superBind(source, dto)
-  }
+  
 }
 
