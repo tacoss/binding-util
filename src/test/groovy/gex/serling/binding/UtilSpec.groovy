@@ -3,6 +3,7 @@ package gex.serling.binding
 import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
+import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -126,6 +127,25 @@ class UtilSpec extends Specification {
       dtoHero.enemies.each{
         domainHero.enemies*.name.contains(it.name)
       }
+  }
+
+  def 'It can be specified a dynamic way to bind properties'(){
+    when:
+      def util = new Util()
+
+      Map map = [
+        "age" : { x -> x * 10 }
+      ]
+    
+      def cb = new BindingEntry(source: Hero.class, destination: gex.serling.binding.domain.Hero.class, customBinding: map )
+    
+      util.registerBinding( cb )
+    
+      def object = util.superBind(new Hero(name: 'Goku', age: 21 ), gex.serling.binding.domain.Hero)
+    then:
+      
+      object.name == 'Goku'
+      object.age == 210
   }
   
   

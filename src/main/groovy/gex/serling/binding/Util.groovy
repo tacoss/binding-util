@@ -12,23 +12,21 @@ import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 @Component
 class Util {
 
-  static List avoidList = ['metaClass', 'class']
+  List<BindingEntry> binding
+  
+  static Util auxForStatic = new Util( binding: [] )
 
-  def static getSourceProperties(Object source, Set<String> destinationsProps){
-    Map<String, Object> props = [:]
-    if(DomainClassArtefactHandler.isDomainClass(source.class)) {
-      def d = new DefaultGrailsDomainClass(source.class)
-      props = ( d.properties.toList() << [ name:'id' ]).collectEntries {
-        [ ( it.name ): source."${it.name}" ]
-      }
-    } else {
-      props  = source.properties
-    }
-    props.findAll { it.key in  destinationsProps}
+  void registerBinding(BindingEntry bindingEntry){
+    binding = binding ?: []
+    binding.add(bindingEntry)
   }
 
-  def static bind(Object source, Object destination, List<String> avoid = []) {
+  static List avoidList = ['metaClass', 'class']
 
+  
+  
+  def superBind(Object source, Object destination, List<String> avoid = [], List<BindingEntry> customBinding = []){
+    
     if(source == null){
       return null
     }
@@ -38,6 +36,9 @@ class Util {
     Map entities = [:].withDefault { [] }
     Set<String> destinationsProps = destination.properties.keySet().findAll { !(it in invalidFields) }
 
+
+    
+    
     destinationsProps.each {
       String[] entity = StringUtils.splitByCharacterTypeCamelCase(it)
 
@@ -120,12 +121,48 @@ class Util {
         } else {
           if (attribute.value != null) {
             destination.setProperty(attribute.key, attribute.value)
+
+            if(binding){
+              def x = binding.find{
+                it.source.name == source.class.name
+                it.destination.name == destination.class.name
+              }
+
+              def funct = x.customBinding.get(attribute.key)
+
+              if(funct) {
+                destination.setProperty(attribute.key, funct(attribute.value))
+              }
+            }
           }
         }
       }
     }
 
+
+    
+    
+
     destination
+    
+  }
+
+
+  def static getSourceProperties(Object source, Set<String> destinationsProps){
+    Map<String, Object> props = [:]
+    if(DomainClassArtefactHandler.isDomainClass(source.class)) {
+      def d = new DefaultGrailsDomainClass(source.class)
+      props = ( d.properties.toList() << [ name:'id' ]).collectEntries {
+        [ ( it.name ): source."${it.name}" ]
+      }
+    } else {
+      props  = source.properties
+    }
+    props.findAll { it.key in  destinationsProps}
+  }
+
+  def static bind(Object source, Object destination, List<String> avoid = []) {
+    auxForStatic.superBind(source, destination, avoid)
   }
 
   private static boolean checkForEntity(Object source, String val) {
@@ -138,6 +175,11 @@ class Util {
     def dto = target.newInstance()
 
     bind(source, dto, invalidFields)
+  }
+
+  def superBind(Object source, Class target, List<String> avoid = []) {
+    def dto = target.newInstance()
+    superBind(source, dto)
   }
 }
 
