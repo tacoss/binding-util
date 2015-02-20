@@ -62,136 +62,104 @@ class Util {
     def destinationProperties = getValidDestinationProperties(destination, invalidFields, source)
     
     Set<String> destinationsProps = destinationProperties.destinationsProps
-    Map destinationEntities = destinationProperties.entities
+    Map entities = destinationProperties.entities
 
-    def sourceProperties = getSourceProperties(source, destinationsProps)
-    sourceProperties += destinationEntities
+    def props = getSourceProperties(source, destinationsProps)
+    props += entities
 
     use(InvokerHelper) {
-      sourceProperties.each { sourcePropertyEntry ->
+      props.each { attribute ->
+        def prop = source.getProperty(attribute.key)
 
-        def result
-        def sourceProperty = source.getProperty(sourcePropertyEntry.key)
-
-        if (DomainClassArtefactHandler.isDomainClass(sourceProperty.getClass())) {
-          result = processDomainClass(source, destination, sourcePropertyEntry, destinationEntities)
-        } else if (sourceProperty.getClass().isEnum()) {
-          result = processEnum(source, destination, sourcePropertyEntry, destinationEntities)
-        } else if (sourceProperty instanceof Collection) {
-          result = processCollection(source, destination, sourcePropertyEntry, destinationEntities)
+        if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
+          processDomainClass(source, destination, attribute, entities)
+        } else if (prop.getClass().isEnum()) {
+          processEnum(source, destination, attribute, entities)
+        } else if (prop instanceof Collection) {
+          processCollection(source, destination, attribute, entities)
         } else {
-          result = processSimpleProperty(source, destination, sourcePropertyEntry, destinationEntities)
+          processSimpleProperty(source, destination, attribute, entities)
         }
+        
+//        if(dynamicBindings){
+//          def result = processDynamicBinding(source, destination, attribute, entities)
+//          if(result){
+//            destination.setProperty(attribute.key, result)
+//          }
+//        }
 
-        if(dynamicBindings){
-          result = processDynamicBinding(source, destination, sourcePropertyEntry, destinationEntities) ?: result
-        }
-        
-        if(result) {
-          destination.setProperty(result.key, result.value)
-        }
-        
       }
     }
     
     destination
   }
   
-  def Map processDomainClass(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
-    String key
-    String value
+  def processDomainClass(Object source,  Object destination,  def attribute, Map entities){
+    def prop = source.getProperty(attribute.key)
+    def propName = attribute.key
     
-    String sourcePropName = sourcePropertyEntry.key
-    def sourceProperty = source.getProperty(sourcePropName)
-
-    if (destinationEntities[sourcePropName]) {
-      destinationEntities[sourcePropName].each { attr ->
-        key = sourcePropName + attr.toString().capitalize()
-        value = sourceProperty.getProperty(attr)
+    if (entities[attribute.key]) {
+      entities[attribute.key].each { attr ->
+        destination.setProperty(attribute.key + attr.toString().capitalize(), prop.getProperty(attr))
       }
     } else {
-      Field sourceField = ReflectionUtils.findField(destination.getClass(), sourcePropName)
+      Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
       def destinationClass = sourceField.getGenericType()
-      key = sourcePropertyEntry.name
-      value = dynamicBind(sourceProperty, destinationClass)
+      destination.setProperty(attribute.key, bind(prop, destinationClass))
     }
-    
-    [key: key, value: value] 
   }
   
   
-  def processEnum(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
-    String key
-    String value
-
-    String sourcePropName = sourcePropertyEntry.key
-    def sourceProperty = source.getProperty(sourcePropName)
-
-
-    if (destinationEntities[sourcePropName]) {
-      destinationEntities[sourcePropName].each { attr ->
-        key = sourcePropName + attr.toString().capitalize()
-        value = destination?."${attr}"
+  def processEnum(Object source,  Object destination,  def attribute, Map entities){
+    def prop = source.getProperty(attribute.key)
+    def propName = attribute.key
+    
+    if (entities[attribute.key]) {
+      entities[attribute.key].each { attr ->
+        destination.setProperty(attribute.key + attr.toString().capitalize(), prop?."${attr}")
       }
     } else {
-      Field sourceField = ReflectionUtils.findField(destination.getClass(), sourcePropName)
+      Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
       def destinationClass = sourceField.getGenericType()
-      key = sourcePropName
-      value = dynamicBind(sourceProperty, destinationClass)
+      destination.setProperty(attribute.key, bind(prop, destinationClass))
     }
-
-    [key: key, value: value]
   }
   
   
-  def processCollection(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
-    Map destinationValue
-
-    String sourcePropName = sourcePropertyEntry.key
-    def sourceProperty = source.getProperty(sourcePropName)
-    
+  def processCollection(Object source,  Object destination,  def attribute, Map entities){
     def destList = []
+    def prop = source.getProperty(attribute.key)
+    def propName = attribute.key
 
-    def listItem = sourceProperty.find { it != null }
+    def listItem = prop.find { it != null }
 
     if (listItem) {
 
-      Field sourceField = ReflectionUtils.findField(destination.getClass(), sourcePropName)
+      Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
       def destinationClass
       if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
         destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
       }
 
       if (destinationClass) {
-        sourceProperty.each { theItem ->
+        prop.each { theItem ->
           if (theItem != null) {
-            destList << dynamicBind(theItem, destinationClass)
+            destList << bind(theItem, destinationClass)
           }
         }
       }
 
     }
     if (destList) {
-      destinationValue = [
-        key: sourcePropName,
-        value: destList
-      ]
+      destination.setProperty(attribute.key, destList)
     }
-    destinationValue
   }
 
   
-  def processSimpleProperty(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
-    Map destinationValue
-    
-    if (sourcePropertyEntry.value != null) {
-      destinationValue = [
-        key: sourcePropertyEntry.key,
-        value:  sourcePropertyEntry.value
-      ]
+  def processSimpleProperty(Object source,  Object destination,  def attribute, Map entities){
+    if (attribute.value != null) {
+      destination.setProperty(attribute.key, attribute.value)
     }
-    
-    destinationValue
   }
 
   def processDynamicBinding(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){

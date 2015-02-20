@@ -18,7 +18,9 @@ class Hero {
 
   List<Enemy> enemies
 
-
+  Planet planet
+  
+  Status status
 
   static mapping = {
     id generator: 'uuid2'
@@ -27,5 +29,6 @@ class Hero {
   static constraints = {
     name blank: false, nullable: false
   }
-
 }
+
+
