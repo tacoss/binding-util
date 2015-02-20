@@ -80,14 +80,6 @@ class Util {
         } else {
           processSimpleProperty(source, destination, attribute, entities)
         }
-        
-//        if(dynamicBindings){
-//          def result = processDynamicBinding(source, destination, attribute, entities)
-//          if(result){
-//            destination.setProperty(attribute.key, result)
-//          }
-//        }
-
       }
     }
     
@@ -155,14 +147,13 @@ class Util {
     }
   }
 
-  
   def processSimpleProperty(Object source,  Object destination,  def attribute, Map entities){
     if (attribute.value != null) {
       destination.setProperty(attribute.key, attribute.value)
     }
   }
 
-  def processDynamicBinding(Object source,  Object destination,  def sourcePropertyEntry, Map destinationEntities){
+  def processDynamicBinding(Object source,  Object destination,  def sourcePropertyEntry){
     Map destinationValue
 
     def customClosure = dynamicBindings.find{

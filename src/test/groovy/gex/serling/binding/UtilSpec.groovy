@@ -149,25 +149,25 @@ class UtilSpec extends Specification {
       }
   }
 
-//  def 'It can be specified a dynamic way to bind properties (simple properties)'(){
-//    when:
-//      def util = new Util()
-//
-//      Map map = [
-//        "age" : { x -> x * 10 }
-//      ]
-//
-//      def cb = new BindingEntry(source: Hero.class, destination: gex.serling.binding.domain.Hero.class, customBindings: map )
-//
-//      util.registerBinding( cb )
-//
-//      def object = util.dynamicBind(new Hero(name: 'Goku', age: 21 ), gex.serling.binding.domain.Hero)
-//    then:
-//
-//      object.name == 'Goku'
-//      object.age == 210
-//  }
-//
+  def 'It can be specified a dynamic way to bind properties (simple properties)'(){
+    when:
+      def util = new Util()
+
+      Map map = [
+        "age" : { x -> x * 10 }
+      ]
+
+      def cb = new BindingEntry(source: Hero.class, destination: gex.serling.binding.domain.Hero.class, customBindings: map )
+
+      util.registerBinding( cb )
+
+      def object = util.dynamicBind(new Hero(name: 'Goku', age: 21 ), gex.serling.binding.domain.Hero)
+    then:
+
+      object.name == 'Goku'
+      object.age == 210
+  }
+
 //  def 'It can be specified a dynamic way to bind properties (collection properties)'(){
 //    given:
 //      def util = new Util()
