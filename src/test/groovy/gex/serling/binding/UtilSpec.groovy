@@ -168,31 +168,31 @@ class UtilSpec extends Specification {
       object.age == 210
   }
 
-//  def 'It can be specified a dynamic way to bind properties (collection properties)'(){
-//    given:
-//      def util = new Util()
-//
-//      def hardcodedEnemies = [new Enemy(name: 'OtroDale'), new Enemy(name: 'OtroCyberman'), new Enemy(name: 'Otro Weeping Ange')]
-//      Map map = [
-//        "enemies" : { x -> hardcodedEnemies }
-//      ]
-//
-//      def cb = new BindingEntry(source: gex.serling.binding.domain.Hero.class, destination: Hero.class , customBindings: map )
-//
-//      util.registerBinding( cb )
-//
-//
-//      gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
-//      domainHero.name = "The doctor"
-//      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
-//
-//    when:
-//      Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
-//
-//    then:
-//      dtoHero.name == domainHero.name
-//      dtoHero.enemies.containsAll(hardcodedEnemies)
-//  }
-//
+  def 'It can be specified a dynamic way to bind properties (collection properties)'(){
+    given:
+      def util = new Util()
+
+      def hardcodedEnemies = [new Enemy(name: 'OtroDale'), new Enemy(name: 'OtroCyberman'), new Enemy(name: 'Otro Weeping Ange')]
+      Map map = [
+        "enemies" : { x -> hardcodedEnemies }
+      ]
+
+      def cb = new BindingEntry(source: gex.serling.binding.domain.Hero.class, destination: Hero.class , customBindings: map )
+
+      util.registerBinding( cb )
+
+
+      gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+      domainHero.name = "The doctor"
+      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+
+    when:
+      Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
+
+    then:
+      dtoHero.name == domainHero.name
+      dtoHero.enemies.containsAll(hardcodedEnemies)
+  }
+
   
 }

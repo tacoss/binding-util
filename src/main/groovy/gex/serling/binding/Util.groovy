@@ -71,14 +71,19 @@ class Util {
       props.each { attribute ->
         def prop = source.getProperty(attribute.key)
 
-        if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
-          processDomainClass(source, destination, attribute, entities)
-        } else if (prop.getClass().isEnum()) {
-          processEnum(source, destination, attribute, entities)
-        } else if (prop instanceof Collection) {
-          processCollection(source, destination, attribute, entities)
-        } else {
-          processSimpleProperty(source, destination, attribute, entities)
+        def dynamicBinding = getDynamicBindingValue(source, destination, attribute)
+        if(dynamicBinding){
+          destination.setProperty(attribute.key, dynamicBinding)
+        }else {
+          if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
+            processDomainClass(source, destination, attribute, entities)
+          } else if (prop.getClass().isEnum()) {
+            processEnum(source, destination, attribute, entities)
+          } else if (prop instanceof Collection) {
+            processCollection(source, destination, attribute, entities)
+          } else {
+            processSimpleProperty(source, destination, attribute, entities)
+          }
         }
       }
     }
@@ -152,25 +157,20 @@ class Util {
       destination.setProperty(attribute.key, attribute.value)
     }
   }
+  
+  def getDynamicBindingValue(Object source,  Object destination,  def attribute){
+    def value
+    if(dynamicBindings){
+      def customClosure = dynamicBindings.find{
+        it.source.name == source.class.name
+        it.destination.name == destination.class.name
+      }?.customBindings?.get(attribute.key)
 
-  def processDynamicBinding(Object source,  Object destination,  def sourcePropertyEntry){
-    Map destinationValue
-
-    def customClosure = dynamicBindings.find{
-      it.source.name == source.class.name
-      it.destination.name == destination.class.name
-    }?.customBindings?.get(sourcePropertyEntry.key)
-    
-    
-    if(customClosure) {
-      destinationValue = [
-        key: sourcePropertyEntry.key,
-        value: customClosure(sourcePropertyEntry.value)
-      ]
+      value = customClosure ? customClosure(attribute.value) : null
     }
-    
-    destinationValue
+    value
   }
+
 
   def static getSourceProperties(Object source, Set<String> destinationsProps){
     Map<String, Object> props = [:]
