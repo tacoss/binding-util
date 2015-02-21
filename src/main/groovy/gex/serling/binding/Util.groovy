@@ -14,8 +14,8 @@ class Util {
 
   static List avoidList = ['metaClass', 'class']
   
-  List<BindingEntry> dynamicBindings
-  List<String> exclusions
+  List<DynamicBinding> dynamicBindings
+  Set<String> exclusions
   
   
   Util(){
@@ -23,20 +23,16 @@ class Util {
     exclusions = []
   }
 
-  Util(List<BindingEntry> dynamicBindings, List<String> exclusions) {
-    this.dynamicBindings = dynamicBindings
-    this.exclusions = exclusions
-  }
-
-  void registerBinding(BindingEntry bindingEntry){
+  void registerBinding(DynamicBinding bindingEntry){
     dynamicBindings = dynamicBindings ?: []
     dynamicBindings.add(bindingEntry)
   }
 
-  void registerExclusion(String exclusion){
-    exclusions = exclusions ?: []
-    exclusions.add(exclusion)
+  void registerExclusions(List<String> exclusions){
+    this.exclusions = exclusions ?: []
+    this.exclusions.addAll(exclusions)
   }
+
 
   def static bind(Object source, Class target, List<String> avoid = []) {
     def invalidFields = avoidList + avoid
@@ -59,6 +55,8 @@ class Util {
     }
 
     def invalidFields = avoidList + exclusions
+    println "Invalid Fields: ${invalidFields}"
+    
     def destinationProperties = getValidDestinationProperties(destination, invalidFields, source)
     
     Set<String> destinationsProps = destinationProperties.destinationsProps
