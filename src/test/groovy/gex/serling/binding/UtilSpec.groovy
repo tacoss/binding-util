@@ -4,7 +4,6 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
-import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
