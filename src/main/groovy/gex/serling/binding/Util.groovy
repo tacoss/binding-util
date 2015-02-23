@@ -172,6 +172,17 @@ class Util {
         it.sourceClass.name == source.class.name
         it.destinationClass.name == destination.class.name
       }?.customBindings?.get(attribute.key)
+
+      
+      
+      def y = dynamicBindings.find{
+        it.sourceClass.name == source.class.name
+        it.destinationClass.name == destination.class.name
+      }?.customBindings
+      
+        
+      println "Attribute:  ${attribute.key} Y: ${y}"
+      
       
       "CustomClosure: ${customClosure}"
 
