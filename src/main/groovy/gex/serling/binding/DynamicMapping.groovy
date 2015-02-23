@@ -9,4 +9,5 @@ class DynamicMapping {
   Class destinationClass
   
   Map<String, Closure> customBindings
+  List<String> exclusions
 }

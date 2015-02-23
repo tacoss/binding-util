@@ -4,6 +4,7 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
+import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -191,22 +192,25 @@ class UtilSpec extends Specification {
       dtoHero.enemies.containsAll(hardcodedEnemies)
   }
   
+  @IgnoreRest
   def 'A configured instance is used for multiple bindings'(){
     given:
       def util = new Util()
     
       // Register bindings
       def hardcodedEnemies = [new Enemy(name: 'Silence'), new Enemy(name: 'Dark')]
+    
       Map mappings = [
         "age" : { x -> x * 10 },
         "enemies" : { x -> hardcodedEnemies }
       ]
-      def db = new DynamicMapping(sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class, customBindings: mappings )
+    
+      def db = new DynamicMapping(
+        sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class,
+        customBindings: mappings,
+        exclusions: ['notPersistedField', 'isInmortal'])
     
       util.registerBinding( db )
-      
-      // Register exclusions
-      util.registerExclusions(['notPersistedField', 'isInmortal'])
     
     when: 'A binding'
 

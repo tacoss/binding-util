@@ -15,6 +15,7 @@ class Util {
   static List avoidList = ['metaClass', 'class']
   
   List<DynamicMapping> dynamicBindings
+  
   Set<String> exclusions
   
   
@@ -25,15 +26,22 @@ class Util {
 
   void registerBinding(DynamicMapping bindingEntry){
     dynamicBindings = dynamicBindings ?: []
+    
+    bindingEntry.exclusions.each {
+      bindingEntry.customBindings.put(it, { x -> null })
+    }
+    
     dynamicBindings.add(bindingEntry)
+    
+    dynamicBindings.each {
+      it.customBindings.each { k, v -> 
+        println "-> K" + k
+
+      }
+    }
   }
 
-  void registerExclusions(List<String> exclusions){
-    this.exclusions = exclusions ?: []
-    this.exclusions.addAll(exclusions)
-  }
-
-
+  
   def static bind(Object source, Class target, List<String> avoid = []) {
     def invalidFields = avoidList + avoid
     def dto = target.newInstance()
@@ -158,10 +166,14 @@ class Util {
   def getDynamicBindingValue(Object source,  Object destination,  def attribute){
     def value
     if(dynamicBindings){
+      println "Dynamic Bindings----"
+      
       def customClosure = dynamicBindings.find{
         it.sourceClass.name == source.class.name
         it.destinationClass.name == destination.class.name
       }?.customBindings?.get(attribute.key)
+      
+      "CustomClosure: ${customClosure}"
 
       value = customClosure ? customClosure(attribute.value) : null
     }
