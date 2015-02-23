@@ -13,7 +13,7 @@ class Hero {
   List otherNames
 
   String SuperpowerName
-
+  Integer statusId
 
   List<Enemy> enemies
 
