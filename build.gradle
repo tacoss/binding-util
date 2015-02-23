@@ -40,7 +40,7 @@ dependencies {
   testCompile "org.springframework.boot:spring-boot-starter-test:${project.springBootVersion}"
   testCompile ("org.springframework.boot:spring-boot-starter-web:${project.springBootVersion}")
   testCompile "org.springframework.boot:spring-boot-starter-data-jpa:${project.springBootVersion}"
-  testCompile "org.hsqldb:hsqldb:${project.hsqldbVersion}"
+  testCompile "com.h2database:h2:${project.h2Version}"
 }
 
 Date buildTimeAndDate = new Date()
