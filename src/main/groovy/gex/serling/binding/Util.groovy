@@ -28,17 +28,10 @@ class Util {
     dynamicBindings = dynamicBindings ?: []
     
     bindingEntry.exclusions.each {
-      bindingEntry.customBindings.put(it, { x -> null })
+      bindingEntry.customBindings.put( it, { x -> null })
     }
     
     dynamicBindings.add(bindingEntry)
-    
-    dynamicBindings.each {
-      it.customBindings.each { k, v -> 
-        println "-> K" + k
-
-      }
-    }
   }
 
   
@@ -77,8 +70,9 @@ class Util {
         def prop = source.getProperty(attribute.key)
 
         def dynamicBinding = getDynamicBindingValue(source, destination, attribute)
-        if(dynamicBinding){
-          destination.setProperty(attribute.key, dynamicBinding)
+        
+        if(dynamicBinding && dynamicBinding.existDynamicBinding){
+          destination.setProperty(attribute.key, dynamicBinding.value)
         }else {
           if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
             processDomainClass(source, destination, attribute, entities)
@@ -163,32 +157,21 @@ class Util {
     }
   }
   
-  def getDynamicBindingValue(Object source,  Object destination,  def attribute){
-    def value
+  def Map getDynamicBindingValue(Object source,  Object destination,  def attribute){
+    Map result
+    
     if(dynamicBindings){
-      println "Dynamic Bindings----"
-      
       def customClosure = dynamicBindings.find{
         it.sourceClass.name == source.class.name
         it.destinationClass.name == destination.class.name
       }?.customBindings?.get(attribute.key)
-
-      
-      
-      def y = dynamicBindings.find{
-        it.sourceClass.name == source.class.name
-        it.destinationClass.name == destination.class.name
-      }?.customBindings
-      
-        
-      println "Attribute:  ${attribute.key} Y: ${y}"
-      
-      
-      "CustomClosure: ${customClosure}"
-
-      value = customClosure ? customClosure(attribute.value) : null
+      result = [
+        existDynamicBinding: (customClosure != null),
+        value: (customClosure != null) ? customClosure(attribute.value) : null
+      ]
     }
-    value
+    
+    result
   }
 
 

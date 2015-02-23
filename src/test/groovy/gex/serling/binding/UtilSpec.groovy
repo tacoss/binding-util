@@ -4,7 +4,6 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
-import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -191,8 +190,7 @@ class UtilSpec extends Specification {
       dtoHero.name == domainHero.name
       dtoHero.enemies.containsAll(hardcodedEnemies)
   }
-  
-  @IgnoreRest
+
   def 'A configured instance is used for multiple bindings'(){
     given:
       def util = new Util()
@@ -208,12 +206,11 @@ class UtilSpec extends Specification {
       def db = new DynamicMapping(
         sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class,
         customBindings: mappings,
-        exclusions: ['notPersistedField', 'isInmortal'])
+        exclusions: ["notPersistedField", "isInmortal"])
     
       util.registerBinding( db )
     
     when: 'A binding'
-
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
       domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
@@ -232,7 +229,6 @@ class UtilSpec extends Specification {
       dtoHero.notPersistedField == null
 
     when: 'A second binding'
-
       domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "Pikachu"
       domainHero.enemies = [new Enemy(name: 'Jessy'), new Enemy(name: 'James')]
