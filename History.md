@@ -1,4 +1,17 @@
 
+0.1.14 / 2015-02-23
+==================
+
+  * Changing from hsql to h2
+  * IllegalArgumentException is thrown when source object is not an instance
+  * Exclusions are now linked to source/destination classes
+  * upgraded plugins and Groovy version
+  * upgraded to Gradle 2.3
+  * Dynamic binding was added. Tests included
+  * Introducing dynamic bindings
+  * Source refactor
+  * The mechanism to support register of dynamic mappings was added. Static behaviour still works, but it will be deprecated
+
 0.1.13 / 2015-01-27
 ==================
 
