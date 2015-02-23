@@ -4,7 +4,6 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
-import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -156,7 +155,7 @@ class UtilSpec extends Specification {
         "age" : { x -> x * 10 }
       ]
 
-      def cb = new DynamicBinding(source: Hero.class, destination: gex.serling.binding.domain.Hero.class, customBindings: map )
+      def cb = new DynamicMapping(sourceClass: Hero.class, destinationClass: gex.serling.binding.domain.Hero.class, customBindings: map )
 
       util.registerBinding( cb )
 
@@ -176,7 +175,7 @@ class UtilSpec extends Specification {
         "enemies" : { x -> hardcodedEnemies }
       ]
 
-      def cb = new DynamicBinding(source: gex.serling.binding.domain.Hero.class, destination: Hero.class , customBindings: map )
+      def cb = new DynamicMapping(sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class , customBindings: map )
 
       util.registerBinding( cb )
 
@@ -202,7 +201,8 @@ class UtilSpec extends Specification {
         "age" : { x -> x * 10 },
         "enemies" : { x -> hardcodedEnemies }
       ]
-      def db = new DynamicBinding(source: gex.serling.binding.domain.Hero.class, destination: Hero.class, customBindings: mappings )
+      def db = new DynamicMapping(sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class, customBindings: mappings )
+    
       util.registerBinding( db )
       
       // Register exclusions
@@ -246,5 +246,8 @@ class UtilSpec extends Specification {
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
   }
+  
+  
+  
   
 }

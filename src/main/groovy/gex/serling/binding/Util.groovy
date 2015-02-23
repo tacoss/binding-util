@@ -14,7 +14,7 @@ class Util {
 
   static List avoidList = ['metaClass', 'class']
   
-  List<DynamicBinding> dynamicBindings
+  List<DynamicMapping> dynamicBindings
   Set<String> exclusions
   
   
@@ -23,7 +23,7 @@ class Util {
     exclusions = []
   }
 
-  void registerBinding(DynamicBinding bindingEntry){
+  void registerBinding(DynamicMapping bindingEntry){
     dynamicBindings = dynamicBindings ?: []
     dynamicBindings.add(bindingEntry)
   }
@@ -55,7 +55,6 @@ class Util {
     }
 
     def invalidFields = avoidList + exclusions
-    println "Invalid Fields: ${invalidFields}"
     
     def destinationProperties = getValidDestinationProperties(destination, invalidFields, source)
     
@@ -160,8 +159,8 @@ class Util {
     def value
     if(dynamicBindings){
       def customClosure = dynamicBindings.find{
-        it.source.name == source.class.name
-        it.destination.name == destination.class.name
+        it.sourceClass.name == source.class.name
+        it.destinationClass.name == destination.class.name
       }?.customBindings?.get(attribute.key)
 
       value = customClosure ? customClosure(attribute.value) : null
