@@ -67,18 +67,59 @@ class Util {
     Set<String> destinationsProps = destinationProperties.destinationsProps
     Map entities = destinationProperties.entities
 
-    def props = getSourceProperties(source, destinationsProps)
+
+    def props = [:]
+
+    def y =  dynamicBindings.find{
+      it.sourceClass.name == source.class.name
+      it.destinationClass.name == destination.class.name
+    }?.customBindings
+
+    y.keySet().each { k->
+      props.put(k, source)
+    }
+    
+    props += getSourceProperties(source, destinationsProps)
     props += entities
 
+
+    
+    
+   
+//
+//    if(y != null){
+//      println ("GET "  + customClosure.getProperties())
+//
+//      if(customClosure.maximumNumberOfParameters == 1){
+//
+//        result = [
+//          existDynamicBinding: (customClosure != null),
+//          value: (customClosure != null) ? customClosure(attribute.value) : null
+//        ]
+//
+//      } else {
+//        result = [
+//          existDynamicBinding: (customClosure != null),
+//          value: (customClosure != null) ? customClosure(source) : null
+//        ]
+//      }
+//    }
+    
+  
+    
+//    props += ['tenantSlugs' : ]
+    
     use(InvokerHelper) {
       props.each { attribute ->
-        def prop = source.getProperty(attribute.key)
-
-        def dynamicBinding = getDynamicBindingValue(source, destination, attribute)
         
+        def dynamicBinding = getDynamicBindingValue(source, destination, attribute)
+
         if(dynamicBinding && dynamicBinding.existDynamicBinding){
           destination.setProperty(attribute.key, dynamicBinding.value)
         }else {
+
+          def prop = source.getProperty(attribute.key)
+
           if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
             processDomainClass(source, destination, attribute, entities)
           } else if (prop.getClass().isEnum()) {
@@ -166,14 +207,22 @@ class Util {
     Map result
     
     if(dynamicBindings){
-      def customClosure = dynamicBindings.find{
+      Closure customClosure = dynamicBindings.find{
         it.sourceClass.name == source.class.name
         it.destinationClass.name == destination.class.name
       }?.customBindings?.get(attribute.key)
-      result = [
-        existDynamicBinding: (customClosure != null),
-        value: (customClosure != null) ? customClosure(attribute.value) : null
-      ]
+      
+      if(customClosure != null){
+        result = [existDynamicBinding: true]
+        
+        if(customClosure.maximumNumberOfParameters == 1){
+          //e.g., {val -> val}
+          result.value = customClosure.call(attribute.value)
+        } else {
+          //e.g.,  {val, obj -> val, obj}
+          result.value = customClosure.call(attribute.value, source)
+        }
+      }
     }
     
     result

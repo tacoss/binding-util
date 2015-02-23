@@ -18,6 +18,7 @@ class Hero {
 
   List<Enemy> enemies
 
+
   Planet planet
   
   Status status

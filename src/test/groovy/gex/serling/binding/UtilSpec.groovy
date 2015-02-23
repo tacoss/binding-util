@@ -4,6 +4,7 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
+import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -203,7 +204,8 @@ class UtilSpec extends Specification {
       ]
     
       def db = new DynamicMapping(
-        sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class,
+        sourceClass: gex.serling.binding.domain.Hero.class,
+        destinationClass: Hero.class,
         customBindings: mappings,
         exclusions: ["notPersistedField", "isInmortal"])
     
@@ -252,6 +254,66 @@ class UtilSpec extends Specification {
     then:
       IllegalArgumentException e = thrown()
       e.message == "Source object must be an instance, not a class"
+  }
+
+  @IgnoreRest
+  def 'Y'(){
+    given:
+      def util = new Util()
+
+      // Register bindings
+      def hardcodedEnemies = [new Enemy(name: 'Silence'), new Enemy(name: 'Dark')]
+
+      Map mappings = [
+        "age" : { x -> x * 10 },
+        "enemies" : { x -> hardcodedEnemies },
+        "separatedByCommaEnemies" : {val, obj -> obj.enemies*.name.join(",")}
+      ]
+
+      def db = new DynamicMapping(
+        sourceClass: gex.serling.binding.domain.Hero.class,
+        destinationClass: Hero.class,
+        customBindings: mappings,
+        exclusions: ["notPersistedField", "isInmortal"])
+
+      util.registerBinding( db )
+
+    when: 'A binding'
+      gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+      domainHero.name = "The doctor"
+      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+      domainHero.age = 94
+      domainHero.isInmortal = true
+      domainHero.status = Status.ACTIVE
+
+      Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
+
+    then:
+      dtoHero.name == "The doctor"
+      //dtoHero.enemies.containsAll(hardcodedEnemies)
+      dtoHero.age == 940
+      dtoHero.statusId == Status.ACTIVE.id
+      dtoHero.isInmortal == null
+      dtoHero.notPersistedField == null
+      dtoHero.separatedByCommaEnemies == "Dalek,Cyberman,Weeping Angel"
+
+    when: 'A second binding'
+      domainHero = new gex.serling.binding.domain.Hero()
+      domainHero.name = "Pikachu"
+      domainHero.enemies = [new Enemy(name: 'Jessy'), new Enemy(name: 'James')]
+      domainHero.age = 5
+      domainHero.isInmortal = false
+      domainHero.status = Status.SUSPENDED
+
+      dtoHero = util.dynamicBind(domainHero, Hero.class)
+
+    then:
+      dtoHero.name == "Pikachu"
+      dtoHero.enemies.containsAll(hardcodedEnemies)
+      dtoHero.age == 50
+      dtoHero.statusId == Status.SUSPENDED.id
+      dtoHero.isInmortal == null
+      dtoHero.notPersistedField == null
   }
   
   

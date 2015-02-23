@@ -16,6 +16,7 @@ class Hero {
   Integer statusId
 
   List<Enemy> enemies
+  String separatedByCommaEnemies
 
 
 }
