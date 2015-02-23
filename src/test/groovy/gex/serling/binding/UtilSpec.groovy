@@ -256,7 +256,6 @@ class UtilSpec extends Specification {
       e.message == "Source object must be an instance, not a class"
   }
 
-  @IgnoreRest
   def 'Y'(){
     given:
       def util = new Util()
@@ -265,7 +264,7 @@ class UtilSpec extends Specification {
       def hardcodedEnemies = [new Enemy(name: 'Silence'), new Enemy(name: 'Dark')]
 
       Map mappings = [
-        "age" : { x -> x * 10 },
+        "age" : { x, y -> x * 10 },
         "enemies" : { x -> hardcodedEnemies },
         "separatedByCommaEnemies" : {val, obj -> obj.enemies*.name.join(",")}
       ]
@@ -290,7 +289,7 @@ class UtilSpec extends Specification {
 
     then:
       dtoHero.name == "The doctor"
-      //dtoHero.enemies.containsAll(hardcodedEnemies)
+      dtoHero.enemies.containsAll(hardcodedEnemies)
       dtoHero.age == 940
       dtoHero.statusId == Status.ACTIVE.id
       dtoHero.isInmortal == null
@@ -314,6 +313,7 @@ class UtilSpec extends Specification {
       dtoHero.statusId == Status.SUSPENDED.id
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
+      dtoHero.separatedByCommaEnemies == "Jessy,James"
   }
   
   

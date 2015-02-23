@@ -75,40 +75,13 @@ class Util {
       it.destinationClass.name == destination.class.name
     }?.customBindings
 
-    y.keySet().each { k->
+    y?.keySet().each { k->
       props.put(k, source)
     }
     
     props += getSourceProperties(source, destinationsProps)
     props += entities
 
-
-    
-    
-   
-//
-//    if(y != null){
-//      println ("GET "  + customClosure.getProperties())
-//
-//      if(customClosure.maximumNumberOfParameters == 1){
-//
-//        result = [
-//          existDynamicBinding: (customClosure != null),
-//          value: (customClosure != null) ? customClosure(attribute.value) : null
-//        ]
-//
-//      } else {
-//        result = [
-//          existDynamicBinding: (customClosure != null),
-//          value: (customClosure != null) ? customClosure(source) : null
-//        ]
-//      }
-//    }
-    
-  
-    
-//    props += ['tenantSlugs' : ]
-    
     use(InvokerHelper) {
       props.each { attribute ->
         
