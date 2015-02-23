@@ -51,6 +51,11 @@ class Util {
   }
 
   def dynamicBind(Object source, Object destination){
+    
+    if (source instanceof Class){
+      throw new IllegalArgumentException("Source object must be an instance, not a class")
+    }
+    
     if(source == null){
       return null
     }

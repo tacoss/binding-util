@@ -4,6 +4,7 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
+import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -22,8 +23,7 @@ class UtilSpec extends Specification {
 
   def 'should bind a new Instance taking a instanciated object'() {
     when:
-      def util = new Util()
-      def object = util.bind(new Hero(name: 'name'), Hero)
+      def object = Util.bind(new Hero(name: 'name'), Hero)
     then:
       object.name == 'name'
   }
@@ -245,6 +245,14 @@ class UtilSpec extends Specification {
       dtoHero.statusId == Status.SUSPENDED.id
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
+  }
+
+  def 'Thow exception if source is a Class, not an instance'(){
+    when:
+      Util.bind(Hero.class, Hero.class)
+    then:
+      IllegalArgumentException e = thrown()
+      e.message == "Source object must be an instance, not a class"
   }
   
   
