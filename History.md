@@ -1,4 +1,12 @@
 
+0.1.15 / 2015-02-24
+==================
+
+  * Improves on readme file
+  * Extending functionality for dynamic binding in order to support closures of type {val, obj -> val, obj}
+  * Closure bindings support binding with property (default), whole object and even external parameters.
+
+
 0.1.14 / 2015-02-23
 ==================
 
