@@ -66,16 +66,10 @@ class Util {
     
     Set<String> destinationsProps = destinationProperties.destinationsProps
     Map entities = destinationProperties.entities
-
-
+    
     def props = [:]
 
-    def y =  dynamicBindings.find{
-      it.sourceClass.name == source.class.name
-      it.destinationClass.name == destination.class.name
-    }?.customBindings
-
-    y?.keySet().each { k->
+    getCustomBindings(source, destination)?.keySet().each { k ->
       props.put(k, source)
     }
     
@@ -180,10 +174,7 @@ class Util {
     Map result
     
     if(dynamicBindings){
-      Closure customClosure = dynamicBindings.find{
-        it.sourceClass.name == source.class.name
-        it.destinationClass.name == destination.class.name
-      }?.customBindings?.get(attribute.key)
+      Closure customClosure = getCustomBindings(source, destination)?.get(attribute.key)
       
       if(customClosure != null){
         result = [existDynamicBinding: true]
@@ -201,6 +192,19 @@ class Util {
     result
   }
 
+
+  Map<String, Closure> getCustomBindings(def source, def destination){
+    def result
+
+    if(dynamicBindings) {
+      result = dynamicBindings.find {
+        it.sourceClass.name == source.class.name
+        it.destinationClass.name == destination.class.name
+      }?.customBindings
+    }
+
+    result
+  }
 
   def static getSourceProperties(Object source, Set<String> destinationsProps){
     Map<String, Object> props = [:]
