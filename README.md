@@ -26,6 +26,8 @@ Given:
 ```groovy
 package gex.serling.binding.domain
 
+import grails.persistence.Entity
+
 @Entity
 class Hero {
   String id
@@ -73,12 +75,12 @@ public enum Status {
 
 ```
 
-#### Pojo Classes
+#### Dto Classes
 
 ```groovy
 package gex.serling.binding.dto
 
-class Hero {
+class HeroDto {
   String name
   String lastName
   Integer age
@@ -91,11 +93,7 @@ class Hero {
   String separatedByCommaEnemies
 }
 
-class Superpower {
-  String name
-}
-
-class Enemy {
+class EnemyDto {
   String name
 }
 
@@ -114,18 +112,18 @@ assert hero.name == 'The Doctor'
 Different type objects binding
 
 ```groovy
-gex.serling.binding.domain.Hero hero = Util.bind(new Hero(name: 'The Doctor'), gex.serling.binding.domain.Hero)
+Hero hero = Util.bind(new HeroDto(name: 'The Doctor'), Hero)
 assert hero.name == 'The Doctor'
 ```
 
 Excluding properties from binding
 
 ```groovy
-Hero dto = new Hero()
+HeroDto dto = new HeroDto()
 dto.name = "The doctor"
 dto.age = 904
 
-gex.serling.binding.domain.Hero domain = Util.bind(dto, gex.serling.binding.domain.Hero.class, ['age'])
+Hero domain = Util.bind(dto, Hero.class, ['age'])
 
 assert domain.name == 'The Doctor'
 assert domain.age == null
@@ -134,12 +132,12 @@ assert domain.age == null
 Inner properties binding using CamelCase. It works also for enums
 
 ```groovy
-gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+Hero domainHero = Hero()
 domainHero.name = "The doctor"
 domainHero.superpower = new Superpower(name: 'Regeneration')
 domainHero.status = Status.DELETED
 
-Hero dtoHero = Util.bind(domainHero, Hero.class)
+HeroDto dtoHero = Util.bind(domainHero, HeroDto.class)
 
 assert dtoHero.name == domainHero.name
 assert dtoHero.superpowerName == domainHero.superpower.name
@@ -149,11 +147,11 @@ assert dtoHero.statusId == Status.DELETED.id
 Binding lists :)
 
 ```groovy
-gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+Hero domainHero = new Hero()
 domainHero.name = "The doctor"
 domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
 
-Hero dtoHero = Util.bind(domainHero, Hero.class)
+HeroDto dtoHero = Util.bind(domainHero, HeroDto.class)
 
 assert dtoHero.name == domainHero.name
 assert dtoHero.enemies*.name.containsAll(domainHero.enemies*.name)
@@ -167,27 +165,27 @@ Simple usage. Define once. Use everywhere
 def util = new Util()
 
 def hardcodedEnemies = [new Enemy(name: 'OtroDale'), new Enemy(name: 'OtroCyberman'), new Enemy(name: 'Otro Weeping Ange')]
-      
-Map map = [ 
+
+Map map = [
   "age" : { x -> x * 10 },
   "enemies" : { x -> hardcodedEnemies }
 ]
 
 def cb = new DynamicMapping(
-  sourceClass: Hero.class,  
-  destinationClass: gex.serling.binding.domain.Hero.class,
-  customBindings: map 
+  sourceClass: HeroDto.class,
+  destinationClass: Hero.class,
+  customBindings: map
 )
 util.registerBinding( cb )
 
-def object = util.dynamicBind(new Hero(name: 'Goku', age: 21 ), gex.serling.binding.domain.Hero)
+Hero object = util.dynamicBind(new HeroDto(name: 'Goku', age: 21 ), Hero)
 
 assert object.name == 'Goku'
 assert object.age == 210
 assert object.enemies.containsAll(hardcodedEnemies)
 ```
 
-Default is over same property, bt binding can be defined over the whole object or external params (One, two or three params in closure)
+Default is over same property, but binding can be defined over the whole object or external params (One, two or three params in closure)
 
 ```groovy
 def util = new Util()
@@ -203,22 +201,24 @@ Map mappings = [
  ]
 
 def db = new DynamicMapping(
-  sourceClass: gex.serling.binding.domain.Hero.class,
-  destinationClass: Hero.class,
+  sourceClass: Hero.class,
+  destinationClass: HeroDto.class,
   customBindings: mappings,
   exclusions: ["notPersistedField", "isInmortal"]
 )
 
 util.registerBinding( db )
 
-gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
+/* A first binding*/
+
+Hero domainHero = new Hero()
 domainHero.name = "The doctor"
 domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
 domainHero.age = 94
 domainHero.isInmortal = true
 domainHero.status = Status.ACTIVE
-    
-Hero dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
+
+HeroDto dtoHero = util.dynamicBind(domainHero, HeroDto.class, extraParams)
 
 dtoHero.name == "The doctor"
 dtoHero.lastName == 'Smith'
@@ -228,6 +228,73 @@ dtoHero.statusId == Status.ACTIVE.id
 dtoHero.isInmortal == null
 dtoHero.notPersistedField == null
 dtoHero.separatedByCommaEnemies == "Dalek,Cyberman,Weeping Angel"
+
+ /* A second binding */
+
+domainHero = new Hero()
+domainHero.name = "Pikachu"
+dtoHero.lastName == 'Mon'
+domainHero.enemies = [new Enemy(name: 'Jessy'), new Enemy(name: 'James')]
+domainHero.age = 5
+domainHero.isInmortal = false
+domainHero.status = Status.SUSPENDED
+
+dtoHero = util.dynamicBind(domainHero, HeroDto.class, extraParams)
+
+dtoHero.name == "Pikachu"
+dtoHero.enemies.containsAll(hardcodedEnemies)
+dtoHero.age == 50
+dtoHero.statusId == Status.SUSPENDED.id
+dtoHero.isInmortal == null
+dtoHero.notPersistedField == null
+dtoHero.separatedByCommaEnemies == "Jessy,James"
+
 ```
+
+So, it is posible to define and configure a bean with all necessary mappings and simply inject it. For example, in Spring Boot:
+
+```groovy
+@EnableAutoConfiguration
+@Configuration
+@ComponentScan
+class TheConfigFile {
+
+  @Bean
+  Util getBindingUtil() {
+    def util = new Util()
+
+    Map mappings = [
+      "age" : { x, y -> x * 10 },
+      "separatedByCommaEnemies" : {val, obj -> obj.enemies*.name.join(",")},
+      "lastName": {val, obj, extra ->  extra[obj.name] }
+    ]
+    def db = new DynamicMapping(
+      sourceClass: Hero.class,
+      destinationClass: HeroDto.class,
+      customBindings: mappings,
+      exclusions: ["notPersistedField", "isInmortal"]
+    )
+    util.registerBinding( db )
+
+    util
+  }
+
+}
+```
+
+and then
+
+```groovy
+class WhateverClass{
+  @Autowired
+  Util bindingUtil
+
+  ...
+}
+```
+
+
+
+
 
 
