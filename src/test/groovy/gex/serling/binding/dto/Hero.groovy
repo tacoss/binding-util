@@ -7,10 +7,12 @@ import gex.serling.binding.domain.Superpower
  */
 class Hero {
   String name
+  String lastName
   Integer age
   Boolean isInmortal
   String notPersistedField
   List otherNames
+  
 
   String SuperpowerName
   Integer statusId

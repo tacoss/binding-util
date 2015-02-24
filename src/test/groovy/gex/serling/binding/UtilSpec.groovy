@@ -4,7 +4,6 @@ import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.dto.Hero
-import spock.lang.IgnoreRest
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -23,9 +22,9 @@ class UtilSpec extends Specification {
 
   def 'should bind a new Instance taking a instanciated object'() {
     when:
-      def object = Util.bind(new Hero(name: 'name'), Hero)
+      def object = Util.bind(new Hero(name: 'The Doctor'), Hero)
     then:
-      object.name == 'name'
+      object.name == 'The Doctor'
   }
   
   def 'Bind between an entity object and a pojo is made without problem'(){
@@ -33,7 +32,6 @@ class UtilSpec extends Specification {
       gex.serling.binding.domain.Hero domain = new gex.serling.binding.domain.Hero(name: 'Dalek Caan')
       println domain
       domain.save(flush: true)
-      println domain.properties
 
     when:
       Hero dto = Util.bind(domain, Hero.class)
@@ -201,7 +199,8 @@ class UtilSpec extends Specification {
       Map mappings = [
         "age" : { x, y -> x * 10 },
         "enemies" : { x -> hardcodedEnemies },
-        "separatedByCommaEnemies" : {val, obj -> obj.enemies*.name.join(",")}
+        "separatedByCommaEnemies" : {val, obj -> obj.enemies*.name.join(",")},
+        "lastName": {val, obj, extra ->  extra[obj.name] }
       ]
 
       def db = new DynamicMapping(
@@ -212,6 +211,9 @@ class UtilSpec extends Specification {
 
       util.registerBinding( db )
 
+      // Aux map
+      Map extraParams = ['The doctor': 'Smith', 'Pikachu': 'Mon' ]
+
     when: 'A binding'
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
@@ -219,27 +221,30 @@ class UtilSpec extends Specification {
       domainHero.age = 94
       domainHero.isInmortal = true
       domainHero.status = Status.ACTIVE
-
-      Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
+    
+      Hero dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
 
     then:
       dtoHero.name == "The doctor"
+      dtoHero.lastName == 'Smith'
       dtoHero.enemies.containsAll(hardcodedEnemies)
       dtoHero.age == 940
       dtoHero.statusId == Status.ACTIVE.id
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
       dtoHero.separatedByCommaEnemies == "Dalek,Cyberman,Weeping Angel"
+      
 
     when: 'A second binding'
       domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "Pikachu"
+      dtoHero.lastName == 'Mon'
       domainHero.enemies = [new Enemy(name: 'Jessy'), new Enemy(name: 'James')]
       domainHero.age = 5
       domainHero.isInmortal = false
       domainHero.status = Status.SUSPENDED
 
-      dtoHero = util.dynamicBind(domainHero, Hero.class)
+      dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
 
     then:
       dtoHero.name == "Pikachu"
@@ -250,8 +255,5 @@ class UtilSpec extends Specification {
       dtoHero.notPersistedField == null
       dtoHero.separatedByCommaEnemies == "Jessy,James"
   }
-  
-  
-  
-  
+
 }

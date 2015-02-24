@@ -11,6 +11,7 @@ class Hero {
   String id
 
   String name
+  String lastName
   Integer age
   Boolean isInmortal
 

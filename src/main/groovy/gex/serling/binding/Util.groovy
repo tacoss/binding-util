@@ -45,12 +45,12 @@ class Util {
     new Util(exclusions: avoid, dynamicBindings: []).dynamicBind(source, destination)
   }
 
-  def dynamicBind(Object source, Class target) {
+  def dynamicBind(Object source, Class target, Map extraParams = null) {
     def dto = target.newInstance()
-    dynamicBind(source, dto)
+    dynamicBind(source, dto, extraParams)
   }
 
-  def dynamicBind(Object source, Object destination){
+  def dynamicBind(Object source, Object destination, Map extraParams = null){
     
     if (source instanceof Class){
       throw new IllegalArgumentException("Source object must be an instance, not a class")
@@ -79,7 +79,7 @@ class Util {
     use(InvokerHelper) {
       props.each { attribute ->
         
-        def dynamicBinding = getDynamicBindingValue(source, destination, attribute)
+        def dynamicBinding = getDynamicBindingValue(source, destination, extraParams, attribute)
 
         if(dynamicBinding && dynamicBinding.existDynamicBinding){
           destination.setProperty(attribute.key, dynamicBinding.value)
@@ -170,7 +170,7 @@ class Util {
     }
   }
   
-  def Map getDynamicBindingValue(Object source,  Object destination,  def attribute){
+  def Map getDynamicBindingValue(Object source,  Object destination,  Map extraParams, def attribute){
     Map result
     
     if(dynamicBindings){
@@ -182,9 +182,13 @@ class Util {
         if(customClosure.maximumNumberOfParameters == 1){
           //e.g., {val -> val}
           result.value = customClosure.call(attribute.value)
-        } else {
+        } else if(customClosure.maximumNumberOfParameters == 2){
           //e.g.,  {val, obj -> val, obj}
           result.value = customClosure.call(attribute.value, source)
+        }
+        else if(customClosure.maximumNumberOfParameters == 3){
+          //e.g.,  {val, obj, extraParams -> val, obj, extraParams}
+          result.value = customClosure.call(attribute.value, source, extraParams)
         }
       }
     }
