@@ -45,12 +45,12 @@ class Util {
     new Util(exclusions: avoid, dynamicBindings: []).dynamicBind(source, destination)
   }
 
-  def dynamicBind(Object source, Class target) {
+  def dynamicBind(Object source, Class target, Map extraParams = null) {
     def dto = target.newInstance()
-    dynamicBind(source, dto)
+    dynamicBind(source, dto, extraParams)
   }
 
-  def dynamicBind(Object source, Object destination){
+  def dynamicBind(Object source, Object destination, Map extraParams = null){
     
     if (source instanceof Class){
       throw new IllegalArgumentException("Source object must be an instance, not a class")
@@ -66,19 +66,27 @@ class Util {
     
     Set<String> destinationsProps = destinationProperties.destinationsProps
     Map entities = destinationProperties.entities
+    
+    def props = [:]
 
-    def props = getSourceProperties(source, destinationsProps)
+    getCustomBindings(source, destination)?.keySet().each { k ->
+      props.put(k, source)
+    }
+    
+    props += getSourceProperties(source, destinationsProps)
     props += entities
 
     use(InvokerHelper) {
       props.each { attribute ->
-        def prop = source.getProperty(attribute.key)
-
-        def dynamicBinding = getDynamicBindingValue(source, destination, attribute)
         
+        def dynamicBinding = getDynamicBindingValue(source, destination, extraParams, attribute)
+
         if(dynamicBinding && dynamicBinding.existDynamicBinding){
           destination.setProperty(attribute.key, dynamicBinding.value)
         }else {
+
+          def prop = source.getProperty(attribute.key)
+
           if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
             processDomainClass(source, destination, attribute, entities)
           } else if (prop.getClass().isEnum()) {
@@ -162,23 +170,45 @@ class Util {
     }
   }
   
-  def Map getDynamicBindingValue(Object source,  Object destination,  def attribute){
+  def Map getDynamicBindingValue(Object source,  Object destination,  Map extraParams, def attribute){
     Map result
     
     if(dynamicBindings){
-      def customClosure = dynamicBindings.find{
-        it.sourceClass.name == source.class.name
-        it.destinationClass.name == destination.class.name
-      }?.customBindings?.get(attribute.key)
-      result = [
-        existDynamicBinding: (customClosure != null),
-        value: (customClosure != null) ? customClosure(attribute.value) : null
-      ]
+      Closure customClosure = getCustomBindings(source, destination)?.get(attribute.key)
+      
+      if(customClosure != null){
+        result = [existDynamicBinding: true]
+        
+        if(customClosure.maximumNumberOfParameters == 1){
+          //e.g., {val -> val}
+          result.value = customClosure.call(attribute.value)
+        } else if(customClosure.maximumNumberOfParameters == 2){
+          //e.g.,  {val, obj -> val, obj}
+          result.value = customClosure.call(attribute.value, source)
+        }
+        else if(customClosure.maximumNumberOfParameters == 3){
+          //e.g.,  {val, obj, extraParams -> val, obj, extraParams}
+          result.value = customClosure.call(attribute.value, source, extraParams)
+        }
+      }
     }
     
     result
   }
 
+
+  Map<String, Closure> getCustomBindings(def source, def destination){
+    def result
+
+    if(dynamicBindings) {
+      result = dynamicBindings.find {
+        it.sourceClass.name == source.class.name
+        it.destinationClass.name == destination.class.name
+      }?.customBindings
+    }
+
+    result
+  }
 
   def static getSourceProperties(Object source, Set<String> destinationsProps){
     Map<String, Object> props = [:]

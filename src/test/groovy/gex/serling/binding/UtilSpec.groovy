@@ -22,9 +22,9 @@ class UtilSpec extends Specification {
 
   def 'should bind a new Instance taking a instanciated object'() {
     when:
-      def object = Util.bind(new Hero(name: 'name'), Hero)
+      def object = Util.bind(new Hero(name: 'The Doctor'), Hero)
     then:
-      object.name == 'name'
+      object.name == 'The Doctor'
   }
   
   def 'Bind between an entity object and a pojo is made without problem'(){
@@ -32,7 +32,6 @@ class UtilSpec extends Specification {
       gex.serling.binding.domain.Hero domain = new gex.serling.binding.domain.Hero(name: 'Dalek Caan')
       println domain
       domain.save(flush: true)
-      println domain.properties
 
     when:
       Hero dto = Util.bind(domain, Hero.class)
@@ -193,22 +192,28 @@ class UtilSpec extends Specification {
   def 'A configured instance is used for multiple bindings'(){
     given:
       def util = new Util()
-    
+
       // Register bindings
       def hardcodedEnemies = [new Enemy(name: 'Silence'), new Enemy(name: 'Dark')]
-    
+
       Map mappings = [
-        "age" : { x -> x * 10 },
-        "enemies" : { x -> hardcodedEnemies }
+        "age" : { x, y -> x * 10 },
+        "enemies" : { x -> hardcodedEnemies },
+        "separatedByCommaEnemies" : {val, obj -> obj.enemies*.name.join(",")},
+        "lastName": {val, obj, extra ->  extra[obj.name] }
       ]
-    
+
       def db = new DynamicMapping(
-        sourceClass: gex.serling.binding.domain.Hero.class, destinationClass: Hero.class,
+        sourceClass: gex.serling.binding.domain.Hero.class,
+        destinationClass: Hero.class,
         customBindings: mappings,
         exclusions: ["notPersistedField", "isInmortal"])
-    
+
       util.registerBinding( db )
-    
+
+      // Aux map
+      Map extraParams = ['The doctor': 'Smith', 'Pikachu': 'Mon' ]
+
     when: 'A binding'
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
@@ -217,25 +222,29 @@ class UtilSpec extends Specification {
       domainHero.isInmortal = true
       domainHero.status = Status.ACTIVE
     
-      Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
+      Hero dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
 
     then:
       dtoHero.name == "The doctor"
+      dtoHero.lastName == 'Smith'
       dtoHero.enemies.containsAll(hardcodedEnemies)
       dtoHero.age == 940
       dtoHero.statusId == Status.ACTIVE.id
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
+      dtoHero.separatedByCommaEnemies == "Dalek,Cyberman,Weeping Angel"
+      
 
     when: 'A second binding'
       domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "Pikachu"
+      dtoHero.lastName == 'Mon'
       domainHero.enemies = [new Enemy(name: 'Jessy'), new Enemy(name: 'James')]
       domainHero.age = 5
       domainHero.isInmortal = false
       domainHero.status = Status.SUSPENDED
 
-      dtoHero = util.dynamicBind(domainHero, Hero.class)
+      dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
 
     then:
       dtoHero.name == "Pikachu"
@@ -244,17 +253,7 @@ class UtilSpec extends Specification {
       dtoHero.statusId == Status.SUSPENDED.id
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
+      dtoHero.separatedByCommaEnemies == "Jessy,James"
   }
 
-  def 'Thow exception if source is a Class, not an instance'(){
-    when:
-      Util.bind(Hero.class, Hero.class)
-    then:
-      IllegalArgumentException e = thrown()
-      e.message == "Source object must be an instance, not a class"
-  }
-  
-  
-  
-  
 }
