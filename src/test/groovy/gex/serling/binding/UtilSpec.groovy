@@ -3,6 +3,7 @@ package gex.serling.binding
 import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
+import gex.serling.binding.domain.Hero as DomainHero
 import gex.serling.binding.dto.Hero
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
@@ -254,6 +255,14 @@ class UtilSpec extends Specification {
       dtoHero.isInmortal == null
       dtoHero.notPersistedField == null
       dtoHero.separatedByCommaEnemies == "Jessy,James"
+  }
+
+  def 'should override a property when bind with null value'() {
+    when:
+      DomainHero hero = new DomainHero(name: "lkasjfdljaskdfj")
+      hero = Util.bind(new Hero(name: null), hero)
+    then:
+      hero.name == null
   }
 
 }
