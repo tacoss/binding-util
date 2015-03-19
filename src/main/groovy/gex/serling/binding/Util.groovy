@@ -37,7 +37,8 @@ class Util {
 
   void registerBinding(DynamicMapping bindingEntry){
     dynamicBindings = dynamicBindings ?: []
-    
+    bindingEntry.customBindings ?: [:]
+
     bindingEntry.exclusions.each {
       bindingEntry.customBindings.put( it, { x -> null })
     }
@@ -93,7 +94,9 @@ class Util {
         def dynamicBinding = getDynamicBindingValue(source, destination, extraParams, attribute)
 
         if(dynamicBinding && dynamicBinding.existDynamicBinding){
-          destination.setProperty(attribute.key, dynamicBinding.value)
+          if( destination.properties.containsKey(attribute.key)) {
+            destination.setProperty(attribute.key, dynamicBinding.value)
+          }
         }else {
 
           def prop = source.getProperty(attribute.key)

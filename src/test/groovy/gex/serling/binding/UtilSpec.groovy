@@ -226,7 +226,7 @@ class UtilSpec extends Specification {
       domainHero.isInmortal = true
       domainHero.status = Status.ACTIVE
     
-      Hero dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
+      Hero dtoHero = util.dynamicBind(domainHero, Hero, extraParams)
 
     then:
       dtoHero.name == "The doctor"
@@ -323,5 +323,26 @@ class UtilSpec extends Specification {
       null       || true
       false      || false
   }
+
+  @Issue(value = '20')
+  def 'should bind correctly when no customBindings are defined but exclusions are'() {
+    when:
+      def util = new Util()
+      def dm = new DynamicMapping(
+        sourceClass: Hero,
+        destinationClass: DomainHero,
+        exclusions: ['age', 'otherNames']
+      )
+
+      util.registerBinding( dm )
+      DomainHero object = util.dynamicBind(new Hero(name: 'Hulk', lastName: 'Banner', age: -1, otherNames: ['Bruce Banner'] ), DomainHero)
+
+    then:
+      object.name == 'Hulk'
+      object.age == null
+      object.lastName == 'Banner'
+
+  }
+
 
 }
