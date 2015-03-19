@@ -1,10 +1,13 @@
 package gex.serling.binding
 
 import gex.serling.binding.domain.Enemy
+import gex.serling.binding.domain.Planet
 import gex.serling.binding.domain.Status
 import gex.serling.binding.domain.Superpower
 import gex.serling.binding.domain.Hero as DomainHero
 import gex.serling.binding.dto.Hero
+import spock.lang.IgnoreRest
+import spock.lang.Issue
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -257,12 +260,68 @@ class UtilSpec extends Specification {
       dtoHero.separatedByCommaEnemies == "Jessy,James"
   }
 
-  def 'should override a property when bind with null value'() {
+  @Issue(value = '3')
+  def 'should bind correctly null values (default behaviour)'() {
     when:
-      DomainHero hero = new DomainHero(name: "lkasjfdljaskdfj")
-      hero = Util.bind(new Hero(name: null), hero)
+      DomainHero destination = new DomainHero(
+        name: "Superman",
+        isInmortal: true,
+        superpower: new Superpower(name: 'Fly'),
+        enemies: [new Enemy(name: 'Lex Luthor')],
+        planet: Planet.KRYPTON
+      )
+
+      destination = Util.bind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination)
     then:
-      hero.name == null
+      destination.name == null
+      destination.isInmortal == expected
+      destination.superpower == null
+      destination.enemies == null
+      destination.planet == null
+
+    where:
+      isImmortal || expected
+      null       || null
+      false      || false
+  }
+
+  @Issue(value = '3')
+  def 'should not bind null values when property bindNullValues is set to false'() {
+    given:
+      DomainHero destination = new DomainHero(
+        name: "Superman",
+        isInmortal: true,
+        superpower: new Superpower(name: 'Fly'),
+        enemies: [new Enemy(name: 'Lex Luthor')],
+        planet: Planet.KRYPTON
+      )
+
+      def assertions = { dest->
+        assert dest.name == 'Superman'
+        assert dest.isInmortal == expected
+        assert dest.superpower.name == 'Fly'
+        assert dest.enemies[0].name == 'Lex Luthor'
+        assert dest.planet == Planet.KRYPTON
+        true
+      }
+
+    when: 'making static binding'
+      destination = Util.bind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination, [], false)
+
+    then:
+      assertions(destination)
+
+    when: 'making dynamic binding'
+      def util = new Util(bindNullValues: false)
+      destination == util.dynamicBind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination)
+
+    then:
+      assertions(destination)
+
+    where:
+      isImmortal || expected
+      null       || true
+      false      || false
   }
 
 }
