@@ -1,9 +1,14 @@
 package gex.serling.binding
 
-import gex.serling.binding.domain.Enemy
+import gex.serling.binding.domain.Enemy as DomainEnemy
+import gex.serling.binding.domain.Planet
 import gex.serling.binding.domain.Status
-import gex.serling.binding.domain.Superpower
+import gex.serling.binding.domain.Superpower as DomainSuperpower
+import gex.serling.binding.domain.Hero as DomainHero
+import gex.serling.binding.dto.Enemy
 import gex.serling.binding.dto.Hero
+import gex.serling.binding.dto.Superpower
+import spock.lang.Issue
 import spock.lang.Specification
 import org.springframework.boot.test.IntegrationTest
 import org.springframework.boot.test.SpringApplicationContextLoader
@@ -65,7 +70,7 @@ class UtilSpec extends Specification {
       domainHero.name = "The doctor"
       domainHero.age = 904
       domainHero.isInmortal = true
-      domainHero.superpower = new Superpower(name: 'Regeneration')
+      domainHero.superpower = new DomainSuperpower(name: 'Regeneration')
 
     when:
       Hero dtoHero = Util.bind(domainHero, Hero.class)
@@ -82,7 +87,7 @@ class UtilSpec extends Specification {
       domainHero.name = "The doctor"
       domainHero.age = 904
       domainHero.isInmortal = true
-      domainHero.superpower = new Superpower(name: 'Regeneration')
+      domainHero.superpower = new DomainSuperpower(name: 'Regeneration')
       domainHero.status = Status.DELETED
 
     when:
@@ -98,7 +103,7 @@ class UtilSpec extends Specification {
     given:
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
-      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+      domainHero.enemies = [new DomainEnemy(name: 'Dalek'), new DomainEnemy(name: 'Cyberman'), new DomainEnemy(name: 'Weeping Angel')]
 
     when:
       Hero dtoHero = Util.bind(domainHero, Hero.class)
@@ -133,7 +138,7 @@ class UtilSpec extends Specification {
     given:
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
-      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+      domainHero.enemies = [new DomainEnemy(name: 'Dalek'), new DomainEnemy(name: 'Cyberman'), new DomainEnemy(name: 'Weeping Angel')]
 
     when:
       Hero dtoHero = Util.bind(domainHero, Hero.class)
@@ -168,7 +173,7 @@ class UtilSpec extends Specification {
     given:
       def util = new Util()
 
-      def hardcodedEnemies = [new Enemy(name: 'OtroDale'), new Enemy(name: 'OtroCyberman'), new Enemy(name: 'Otro Weeping Ange')]
+      def hardcodedEnemies = [new DomainEnemy(name: 'OtroDale'), new DomainEnemy(name: 'OtroCyberman'), new DomainEnemy(name: 'Otro Weeping Ange')]
       Map map = [
         "enemies" : { x -> hardcodedEnemies }
       ]
@@ -179,7 +184,7 @@ class UtilSpec extends Specification {
 
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
-      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+      domainHero.enemies = [new DomainEnemy(name: 'Dalek'), new DomainEnemy(name: 'Cyberman'), new DomainEnemy(name: 'Weeping Angel')]
 
     when:
       Hero dtoHero = util.dynamicBind(domainHero, Hero.class)
@@ -194,7 +199,7 @@ class UtilSpec extends Specification {
       def util = new Util()
 
       // Register bindings
-      def hardcodedEnemies = [new Enemy(name: 'Silence'), new Enemy(name: 'Dark')]
+      def hardcodedEnemies = [new DomainEnemy(name: 'Silence'), new DomainEnemy(name: 'Dark')]
 
       Map mappings = [
         "age" : { x, y -> x * 10 },
@@ -217,12 +222,12 @@ class UtilSpec extends Specification {
     when: 'A binding'
       gex.serling.binding.domain.Hero domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "The doctor"
-      domainHero.enemies = [new Enemy(name: 'Dalek'), new Enemy(name: 'Cyberman'), new Enemy(name: 'Weeping Angel')]
+      domainHero.enemies = [new DomainEnemy(name: 'Dalek'), new DomainEnemy(name: 'Cyberman'), new DomainEnemy(name: 'Weeping Angel')]
       domainHero.age = 94
       domainHero.isInmortal = true
       domainHero.status = Status.ACTIVE
     
-      Hero dtoHero = util.dynamicBind(domainHero, Hero.class, extraParams)
+      Hero dtoHero = util.dynamicBind(domainHero, Hero, extraParams)
 
     then:
       dtoHero.name == "The doctor"
@@ -239,7 +244,7 @@ class UtilSpec extends Specification {
       domainHero = new gex.serling.binding.domain.Hero()
       domainHero.name = "Pikachu"
       dtoHero.lastName == 'Mon'
-      domainHero.enemies = [new Enemy(name: 'Jessy'), new Enemy(name: 'James')]
+      domainHero.enemies = [new DomainEnemy(name: 'Jessy'), new DomainEnemy(name: 'James')]
       domainHero.age = 5
       domainHero.isInmortal = false
       domainHero.status = Status.SUSPENDED
@@ -255,5 +260,127 @@ class UtilSpec extends Specification {
       dtoHero.notPersistedField == null
       dtoHero.separatedByCommaEnemies == "Jessy,James"
   }
+
+  @Issue(value = '3')
+  def 'should bind correctly null values (default behaviour)'() {
+    when:
+      DomainHero destination = new DomainHero(
+        name: "Superman",
+        isInmortal: true,
+        superpower: new DomainSuperpower(name: 'Fly'),
+        enemies: [new DomainEnemy(name: 'Lex Luthor')],
+        planet: Planet.KRYPTON
+      )
+
+      destination = Util.bind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination)
+    then:
+      destination.name == null
+      destination.isInmortal == expected
+      destination.superpower == null
+      destination.enemies == null
+      destination.planet == null
+
+    where:
+      isImmortal || expected
+      null       || null
+      false      || false
+  }
+
+  @Issue(value = '3')
+  def 'should not bind null values when property bindNullValues is set to false'() {
+    given:
+      DomainHero destination = new DomainHero(
+        name: "Superman",
+        isInmortal: true,
+        superpower: new DomainSuperpower(name: 'Fly'),
+        enemies: [new DomainEnemy(name: 'Lex Luthor')],
+        planet: Planet.KRYPTON
+      )
+
+      def assertions = { dest->
+        assert dest.name == 'Superman'
+        assert dest.isInmortal == expected
+        assert dest.superpower.name == 'Fly'
+        assert dest.enemies[0].name == 'Lex Luthor'
+        assert dest.planet == Planet.KRYPTON
+        true
+      }
+
+    when: 'making static binding'
+      destination = Util.bind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination, [], false)
+
+    then:
+      assertions(destination)
+
+    when: 'making dynamic binding'
+      def util = new Util(bindNullValues: false)
+      destination == util.dynamicBind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination)
+
+    then:
+      assertions(destination)
+
+    where:
+      isImmortal || expected
+      null       || true
+      false      || false
+  }
+
+  @Issue(value = '20')
+  def 'should bind correctly when no customBindings are defined but exclusions are'() {
+    when:
+      def util = new Util()
+      def dm = new DynamicMapping(
+        sourceClass: Hero,
+        destinationClass: DomainHero,
+        exclusions: ['age', 'otherNames']
+      )
+
+      util.registerBinding( dm )
+      DomainHero object = util.dynamicBind(new Hero(name: 'Hulk', lastName: 'Banner', age: -1, otherNames: ['Bruce Banner'] ), DomainHero)
+
+    then:
+      object.name == 'Hulk'
+      object.age == null
+      object.lastName == 'Banner'
+
+  }
+
+  @Issue(value = '7')
+  def 'should avoid read only properties '() {
+    when:
+      def origin = new Superpower( name: 'Levitate')
+      def object = Util.bind(origin, DomainSuperpower)
+
+    then:
+      // Description is a readOnly property
+      origin.properties.containsKey('description')
+      object.name == 'Levitate'
+  }
+
+  @Issue(value = '6')
+  def 'It must avoid empty list arguments'() {
+    when:
+      List goals = ['Capture Pikachu', 'Not to die because hunger']
+
+      def origin = new Enemy(name: 'Rocket Team', goals:goals)
+      def destination = Util.bind(origin, Enemy)
+
+    then:
+      destination.name == 'Rocket Team'
+      destination.goals == origin.goals
+  }
+  
+  @Issue(value = '6')
+  def 'It must bind empty list correctly'() {
+    when:
+      List<Enemy> enemies = []
+      def origin = new Hero(name: 'Linterna verde', enemies:enemies)
+      Hero destination = Util.bind(origin, Hero)
+
+    then:
+      destination.name == 'Linterna verde'
+      destination.enemies.isEmpty()
+  }
+
 
 }

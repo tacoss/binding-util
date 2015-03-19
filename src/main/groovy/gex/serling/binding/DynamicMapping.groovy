@@ -10,4 +10,9 @@ class DynamicMapping {
 
   Map<String, Closure> customBindings
   List<String> exclusions
+
+  DynamicMapping() {
+    this.customBindings = [:]
+    exclusions = []
+  }
 }

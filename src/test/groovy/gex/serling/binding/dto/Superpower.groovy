@@ -5,4 +5,10 @@ package gex.serling.binding.dto
  */
 class Superpower {
   String name
+
+  // This is a readonly property
+  String getDescription(){
+    return {"hardcoded description for $name"}
+  }
+
 }
