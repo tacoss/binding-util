@@ -160,7 +160,12 @@ class Util {
 
       Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
       def destinationClass
-      if (sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
+
+      // When List is not typed, we make and straight bind
+      if(!sourceField?.getGenericType().properties.containsKey('actualTypeArguments')) {
+        destList = prop
+      }
+      else if(sourceField?.getGenericType()?.actualTypeArguments?.length > 0) {
         destinationClass = sourceField?.getGenericType()?.actualTypeArguments[0]
       }
 
@@ -173,7 +178,7 @@ class Util {
       }
 
     }
-    if (destList) {
+    if (destList != null) {
       destination.setProperty(attribute.key, destList)
     }
   }
