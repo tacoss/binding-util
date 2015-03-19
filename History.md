@@ -1,4 +1,12 @@
 
+0.1.16 / 2015-03-19
+==================
+
+  * Fixed issue #6: Not typed lists are bind directly 
+  * Test for issue #7: Must avoid bind readonly properties
+  * Issue #20 Bug fixed: when exclusions are defined but dynamic bindings no, it throws NPE Test added
+  * It binds correctly null values (default behaviour allows it, but it can be changed to avoid bind null values)
+
 0.1.15 / 2015-02-24
 ==================
 
