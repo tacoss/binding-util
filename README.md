@@ -13,7 +13,7 @@ This library binds Java Objects, it is aware of hibernate (GORM) entities
 Include Dependency
 --------------------
 
-Gradle `gex.serling:binding-util:0.1.15`
+Gradle `gex.serling:binding-util:0.1.16`
 
 
 Usage
@@ -102,14 +102,14 @@ class EnemyDto {
 
 ### Simple static usage
 
-Same type objects binding
+Same type objects binding (e.g., dto to dto)
 
 ```groovy
 Hero hero = Util.bind(new Hero(name: 'The Doctor'), Hero)
 assert hero.name == 'The Doctor'
 ```
 
-Different type objects binding
+Different type objects binding (e.g., dto to domain)
 
 ```groovy
 Hero hero = Util.bind(new HeroDto(name: 'The Doctor'), Hero)
@@ -293,8 +293,39 @@ class WhateverClass{
 }
 ```
 
+### Default behaviours
 
+** Binding null values **:  It allows bind null values, but this behaviorr can be changed through property `bindNullValues`
 
+```groovy
+def destination = Util.bind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination)
+
+assert destination.name == null
+assert destination.isInmortal == null
+assert destination.superpower == null
+assert destination.enemies == null
+assert destination.planet == null
+```
+
+```groovy
+
+DomainHero destination = new DomainHero(
+    name: "Superman",
+    isInmortal: true,
+    superpower: new DomainSuperpower(name: 'Fly'),
+    enemies: [new DomainEnemy(name: 'Lex Luthor')],
+    planet: Planet.KRYPTON
+)
+      
+def destination = Util.bind(new DomainHero(superpower: null, enemies: null, planet: null, isInmortal: isImmortal), destination, [], false)
+
+assert dest.name == 'Superman'
+assert dest.isInmortal == expected
+assert dest.superpower.name == 'Fly'
+assert dest.enemies[0].name == 'Lex Luthor'
+assert dest.planet == Planet.KRYPTON
+
+```
 
 
 
