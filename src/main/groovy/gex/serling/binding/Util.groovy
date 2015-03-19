@@ -17,12 +17,23 @@ class Util {
   List<DynamicMapping> dynamicBindings
   
   Set<String> exclusions
-  
+
+  Boolean bindNullValues
   
   Util(){
     dynamicBindings = []
     exclusions = []
+    bindNullValues = false
   }
+
+  Boolean getBindNullValues() {
+    return bindNullValues
+  }
+
+  void setBindNullValues(Boolean bindNullValues) {
+    this.bindNullValues = bindNullValues
+  }
+
 
   void registerBinding(DynamicMapping bindingEntry){
     dynamicBindings = dynamicBindings ?: []
@@ -35,14 +46,14 @@ class Util {
   }
 
   
-  def static bind(Object source, Class target, List<String> avoid = []) {
+  def static bind(Object source, Class target, List<String> avoid = [], Boolean bindNullValues = true) {
     def invalidFields = avoidList + avoid
     def dto = target.newInstance()
-    bind(source, dto, invalidFields)
+    bind(source, dto, invalidFields, bindNullValues)
   }
 
-  def static bind(Object source, Object destination, List<String> avoid = []) {
-    new Util(exclusions: avoid, dynamicBindings: []).dynamicBind(source, destination)
+  def static bind(Object source, Object destination, List<String> avoid = [], Boolean bindNullValues = true) {
+    new Util(exclusions: avoid, dynamicBindings: [], bindNullValues: bindNullValues).dynamicBind(source, destination)
   }
 
   def dynamicBind(Object source, Class target, Map extraParams = null) {
@@ -165,7 +176,7 @@ class Util {
   }
 
   def processSimpleProperty(Object source,  Object destination,  def attribute, Map entities){
-    if (attribute.value != null) {
+    if (attribute.value != null ||  bindNullValues == true) {
       destination.setProperty(attribute.key, attribute.value)
     }
   }
