@@ -3,9 +3,10 @@ package gex.serling.binding
 import gex.serling.binding.domain.Enemy
 import gex.serling.binding.domain.Planet
 import gex.serling.binding.domain.Status
-import gex.serling.binding.domain.Superpower
+import gex.serling.binding.domain.Superpower as DomainSuperpower
 import gex.serling.binding.domain.Hero as DomainHero
 import gex.serling.binding.dto.Hero
+import gex.serling.binding.dto.Superpower
 import spock.lang.IgnoreRest
 import spock.lang.Issue
 import spock.lang.Specification
@@ -69,7 +70,7 @@ class UtilSpec extends Specification {
       domainHero.name = "The doctor"
       domainHero.age = 904
       domainHero.isInmortal = true
-      domainHero.superpower = new Superpower(name: 'Regeneration')
+      domainHero.superpower = new DomainSuperpower(name: 'Regeneration')
 
     when:
       Hero dtoHero = Util.bind(domainHero, Hero.class)
@@ -86,7 +87,7 @@ class UtilSpec extends Specification {
       domainHero.name = "The doctor"
       domainHero.age = 904
       domainHero.isInmortal = true
-      domainHero.superpower = new Superpower(name: 'Regeneration')
+      domainHero.superpower = new DomainSuperpower(name: 'Regeneration')
       domainHero.status = Status.DELETED
 
     when:
@@ -266,7 +267,7 @@ class UtilSpec extends Specification {
       DomainHero destination = new DomainHero(
         name: "Superman",
         isInmortal: true,
-        superpower: new Superpower(name: 'Fly'),
+        superpower: new DomainSuperpower(name: 'Fly'),
         enemies: [new Enemy(name: 'Lex Luthor')],
         planet: Planet.KRYPTON
       )
@@ -291,7 +292,7 @@ class UtilSpec extends Specification {
       DomainHero destination = new DomainHero(
         name: "Superman",
         isInmortal: true,
-        superpower: new Superpower(name: 'Fly'),
+        superpower: new DomainSuperpower(name: 'Fly'),
         enemies: [new Enemy(name: 'Lex Luthor')],
         planet: Planet.KRYPTON
       )
@@ -344,5 +345,16 @@ class UtilSpec extends Specification {
 
   }
 
+  @Issue(value = '7')
+  def 'should avoid read only properties '() {
+    when:
+      def origin = new Superpower( name: 'Levitate')
+      def object = Util.bind(origin, DomainSuperpower)
+
+    then:
+      // Description is a readOnly property
+      origin.properties.containsKey('description')
+      object.name == 'Levitate'
+  }
 
 }
