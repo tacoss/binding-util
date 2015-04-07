@@ -221,7 +221,7 @@ class Util {
 
     if(dynamicBindings) {
       result = dynamicBindings.find {
-        it.sourceClass.name == source.class.name
+        it.sourceClass.name == source.class.name &&
         it.destinationClass.name == destination.class.name
       }?.customBindings
     }

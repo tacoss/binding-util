@@ -382,5 +382,45 @@ class UtilSpec extends Specification {
       destination.enemies.isEmpty()
   }
 
+  @Issue(value = '26')
+  def 'If multiples bindings are defined, it takes the correct one, not the first encontered'(){
+    given:
+      def util = new Util()
+
+      def dm = new DynamicMapping(
+        sourceClass: Hero,
+        destinationClass: DomainHero,
+        customBindings: [
+          lastName: { val, obj -> obj.lastName}
+        ],
+        exclusions: ['age', 'otherNames']
+      )
+
+      def dm2 = new DynamicMapping(
+        sourceClass: Enemy,
+        destinationClass: DomainHero,
+        customBindings: [
+          lastName: { val, obj -> obj.goals.toString()}
+        ],
+        exclusions: ['goals']
+      )
+
+      util.registerBinding( dm )
+      util.registerBinding( dm2 )
+
+    when:
+      DomainHero object = util.dynamicBind(new Hero(name: 'Hulk', lastName: 'Banner' ), DomainHero)
+
+    then:
+      object.name == 'Hulk'
+      object.lastName == 'Banner'
+
+    when:
+      object = util.dynamicBind(new Enemy(name: 'Hulk'), DomainHero)
+
+    then:
+      object.name == 'Hulk'
+      object.lastName == 'null'
+  }
 
 }
