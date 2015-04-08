@@ -1,4 +1,9 @@
 
+0.1.17 / 2015-04-08
+==================
+
+  * Issue 26: If multiples bindings on same object are defined, it was taken the first encountered, not the correct one. Fixed.
+
 0.1.16 / 2015-03-19
 ==================
 
