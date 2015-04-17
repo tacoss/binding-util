@@ -6,11 +6,13 @@ import org.codehaus.groovy.runtime.InvokerHelper
 import org.springframework.stereotype.Component
 import org.springframework.util.ReflectionUtils
 
+import java.lang.reflect.Array
 import java.lang.reflect.Field
-import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 
 @Component
 class Util {
+
+  def static tache = [String, Integer, Array, List, Boolean, Collections]
 
   static List avoidList = ['metaClass', 'class']
   
@@ -101,7 +103,7 @@ class Util {
 
           def prop = source.getProperty(attribute.key)
 
-          if (DomainClassArtefactHandler.isDomainClass(prop.getClass())) {
+          if (   !tache.contains(obj.getClass() /*DomainClassArtefactHandler.isDomainClass(prop.getClass())*/)) {
             processDomainClass(source, destination, attribute, entities)
           } else if (prop.getClass().isEnum()) {
             processEnum(source, destination, attribute, entities)
@@ -119,17 +121,17 @@ class Util {
   
   def processDomainClass(Object source,  Object destination,  def attribute, Map entities){
     def prop = source.getProperty(attribute.key)
-    def propName = attribute.key
+//    def propName = attribute.key
     
-    if (entities[attribute.key]) {
+//    if (entities[attribute.key]) {
       entities[attribute.key].each { attr ->
         destination.setProperty(attribute.key + attr.toString().capitalize(), prop.getProperty(attr))
       }
-    } else {
-      Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
-      def destinationClass = sourceField.getGenericType()
-      destination.setProperty(attribute.key, bind(prop, destinationClass))
-    }
+//    } else {
+//      Field sourceField = ReflectionUtils.findField(destination.getClass(), propName)
+//      def destinationClass = sourceField.getGenericType()
+//      destination.setProperty(attribute.key, bind(prop, destinationClass))
+//    }
   }
   
   
@@ -250,24 +252,31 @@ class Util {
       String[] entity = StringUtils.splitByCharacterTypeCamelCase(it)
 
       if (entity.length > 0) {
-        def entitiName = entity.inject("") { acc, val ->
+        def entitiName = entity.inject("") {
+
+          acc, val ->
           if (checkForEntity(source, acc + val)) {
             acc + val
-          } else if (checkForEntity(source, acc)) {
+          }
+          else
+            if (checkForEntity(source, acc)) {
             String value = it.split("$acc")[1]
             value = value.replaceFirst(value[0], value[0].toLowerCase())
             entities."$acc" << value
             acc
-          } else {
+          }
+          else {
             acc = acc + val
             acc
           }
-        }
-      } else {
-        if (checkForEntity(it)) {
-          entities."$it"
+
         }
       }
+//      else {
+//        if (checkForEntity(it)) {
+//          entities."$it"
+//        }
+//      }
     }
 
     def result = [
@@ -278,9 +287,38 @@ class Util {
   }
   
   private static boolean checkForEntity(Object source, String val) {
-    source.hasProperty(val) && (DomainClassArtefactHandler.isDomainClass(source.getProperty(val).getClass()) ||
-      source.getProperty(val).getClass().isEnum())
+
+    def es = source.hasProperty(val)
+
+    if(es ){
+      def v = source.getProperty(val)
+      es =  x(v) ||  source.getProperty(val).getClass().isEnum()
+    }
+
+
+//    if(source.hasProperty(val) &&
+//      (DomainClassArtefactHandler.isDomainClass(source.getProperty(val).getClass())))
+//    {
+//      println "Class ${source.getProperty(val).getClass()}"
+//      println "...>" +  DomainClassArtefactHandler.isDomainClass(source.getProperty(val).getClass())
+//    }
+
+
+    //source.getClass()
+    es
   }
-  
+
+
+  def static x(Object obj){
+    def result = false
+
+
+    if( !tache.contains(obj.getClass())  ){
+      result =  true
+    }
+    result
+  }
+
+
 }
 
