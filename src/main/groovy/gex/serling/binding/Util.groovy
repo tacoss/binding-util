@@ -230,16 +230,15 @@ class Util {
   }
 
   def static getSourceProperties(Object source, Set<String> destinationsProps){
-    Map<String, Object> props = [:]
-    if(DomainClassArtefactHandler.isDomainClass(source.class)) {
-      def d = new DefaultGrailsDomainClass(source.class)
-      props = ( d.properties.toList() << [ name:'id' ]).collectEntries {
-        [ ( it.name ): source."${it.name}" ]
-      }
-    } else {
-      props  = source.properties
+    Map properties = [:]
+
+    source.getClass().getDeclaredFields().findAll{
+      !it.isSynthetic()
+    }.each{
+      properties.put(it.name, source."${it.name}")
     }
-    props.findAll { it.key in  destinationsProps}
+
+    properties.findAll { it.key in  destinationsProps}
   }
 
   private Map getValidDestinationProperties(Object destination, List invalidFields, Object source) {
